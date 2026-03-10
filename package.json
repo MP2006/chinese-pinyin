@@ -6,10 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:dict": "node scripts/build-dict.mjs"
   },
   "dependencies": {
+    "@tiptap/pm": "^3.20.0",
+    "@tiptap/react": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
+    "msedge-tts": "^2.0.4",
     "next": "16.1.6",
+    "pinyin-pro": "^3.28.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
