@@ -12,8 +12,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const translation = await translateText(text, targetLang);
-    return NextResponse.json({ translation });
+    // Translate each line separately to preserve line structure,
+    // but within a single API request for efficiency
+    const lines = text.split("\n");
+    const results = await Promise.all(
+      lines.map((line) =>
+        line.trim() ? translateText(line, targetLang) : Promise.resolve("")
+      )
+    );
+    return NextResponse.json({ translation: results.join("\n") });
   } catch (error) {
     console.error("Translation error:", error);
     return NextResponse.json({ translation: "Translation unavailable" });

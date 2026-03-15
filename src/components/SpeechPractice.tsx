@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, RefObject } from "react";
 import { compareChineseText, type CompareResult } from "@/lib/compareText";
+import { logApiCall } from "@/lib/apiUsage";
 
 type RecordingState = "idle" | "listening" | "results";
 
@@ -81,6 +82,7 @@ export default function SpeechPractice({
       const compareResult = compareChineseText(expectedText, transcript);
       setResult(compareResult);
       setState("results");
+      logApiCall("/api/speech", expectedText.length);
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {

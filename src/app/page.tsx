@@ -6,6 +6,7 @@ import PinyinDisplay from "@/components/PinyinDisplay";
 import SelectionToolbar from "@/components/SelectionToolbar";
 import DefinitionPopup from "@/components/DefinitionPopup";
 import { JSONContent } from "@tiptap/react";
+import { logApiCall } from "@/lib/apiUsage";
 
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 
@@ -72,6 +73,7 @@ export default function Home() {
 
         const data = await res.json();
         if (!controller.signal.aborted) {
+          logApiCall("/api/translate", text.length);
           setTranslations((prev) => ({
             ...prev,
             [lang]: data.translation || "",
@@ -192,6 +194,7 @@ export default function Home() {
           body: JSON.stringify({ word, langs: missingLangs }),
         });
         const data = await res.json();
+        logApiCall("/api/define", word.length);
 
         // Merge into cache
         const existing = wordCacheRef.current[word] || {
@@ -250,8 +253,8 @@ export default function Home() {
                   onClick={() => toggleLanguage(lang)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     enabledLanguages.has(lang)
-                      ? "bg-gray-900 text-white dark:bg-gray-200 dark:text-gray-900"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                      ? "bg-teal-600 text-white dark:bg-teal-500 dark:text-white"
+                      : "border border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500"
                   }`}
                 >
                   {LANG_LABELS[lang]}
@@ -262,7 +265,7 @@ export default function Home() {
             {/* Pinyin display with TTS and definition popup */}
             <div
               ref={pinyinContainerRef}
-              className="relative rounded-lg border border-gray-100 bg-gray-50/50 px-5 py-4 dark:border-gray-700 dark:bg-gray-800/50"
+              className="relative rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
             >
               <PinyinDisplay
                 doc={editorJson}
@@ -287,18 +290,18 @@ export default function Home() {
               Array.from(enabledLanguages).map((lang) => (
                 <div
                   key={lang}
-                  className="rounded-lg border border-gray-100 bg-gray-50/50 px-5 py-4 dark:border-gray-700 dark:bg-gray-800/50"
+                  className="mt-3 rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
                 >
                   <div className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
                     {lang === "en" ? "English" : "Tiếng Việt"}
                   </div>
                   {translatingLangs.has(lang) ? (
                     <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 dark:border-gray-600 dark:border-t-gray-300" />
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
                       Translating...
                     </div>
                   ) : translations[lang] ? (
-                    <p className="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                    <p className="whitespace-pre-line text-lg leading-relaxed text-gray-700 dark:text-gray-300">
                       {translations[lang]}
                     </p>
                   ) : null}

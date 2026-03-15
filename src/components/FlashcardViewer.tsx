@@ -29,7 +29,7 @@ const RATINGS: { rating: ReviewRating; label: string; key: string; color: string
   { rating: "again", label: "Again", key: "1", color: "bg-red-500 hover:bg-red-600" },
   { rating: "hard", label: "Hard", key: "2", color: "bg-orange-500 hover:bg-orange-600" },
   { rating: "good", label: "Good", key: "3", color: "bg-green-500 hover:bg-green-600" },
-  { rating: "easy", label: "Easy", key: "4", color: "bg-blue-500 hover:bg-blue-600" },
+  { rating: "easy", label: "Easy", key: "4", color: "bg-teal-500 hover:bg-teal-600" },
 ];
 
 interface FlashcardViewerProps {

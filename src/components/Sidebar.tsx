@@ -23,6 +23,15 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    href: "/usage",
+    label: "Usage",
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2v8H3zM9 9h2v12H9zM15 5h2v16h-2zM21 1h2v20h-2z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
@@ -57,11 +66,11 @@ export default function Sidebar() {
             key={item.href}
             href={item.href}
             className={`group relative flex items-center rounded-lg transition-colors ${
-              mobile ? "gap-3 px-3 py-2.5" : "justify-center p-2.5"
+              mobile ? "gap-3 px-3 py-2.5" : "justify-center gap-3 p-2.5"
             } ${
               active
-                ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                ? "border-l-2 border-teal-600 bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-900/20 dark:text-teal-400"
+                : "border-l-2 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-300"
             }`}
           >
             {item.icon}

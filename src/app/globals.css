@@ -33,13 +33,13 @@ ruby {
 
 rt {
   font-size: 0.6em;
-  color: #6b7280;
+  color: #8b95a0;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   font-weight: 400;
 }
 
 .dark rt {
-  color: #9ca3af;
+  color: #b0bac5;
 }
 
 /* Tiptap editor styles */
@@ -91,10 +91,10 @@ rt {
 
 /* Word hover highlight */
 .pinyin-display [data-word]:hover {
-  background-color: rgba(251, 191, 36, 0.15);
+  background-color: rgba(13, 148, 136, 0.1);
   border-radius: 2px;
 }
 
 .dark .pinyin-display [data-word]:hover {
-  background-color: rgba(251, 191, 36, 0.1);
+  background-color: rgba(13, 148, 136, 0.08);
 }

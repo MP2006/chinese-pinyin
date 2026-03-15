@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { logApiCall } from "@/lib/apiUsage";
 
 export function useTTS() {
   const [speaking, setSpeaking] = useState(false);
@@ -24,6 +25,7 @@ export function useTTS() {
       });
 
       if (!res.ok) throw new Error("TTS request failed");
+      logApiCall("/api/tts", text.length);
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

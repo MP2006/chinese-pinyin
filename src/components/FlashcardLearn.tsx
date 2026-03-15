@@ -87,7 +87,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
         {missed.length > 0 && (
           <button
             onClick={retryMissed}
-            className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+            className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >
             Retry missed ({missed.length})
           </button>
@@ -110,7 +110,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div
-            className="h-full rounded-full bg-gray-900 transition-all duration-300 dark:bg-gray-100"
+            className="h-full rounded-full bg-teal-600 transition-all duration-300 dark:bg-teal-400"
             style={{ width: `${(index / shuffled.length) * 100}%` }}
           />
         </div>
@@ -151,21 +151,21 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
               ? "border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-300"
               : result === "incorrect"
                 ? "border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/20 dark:text-red-300"
-                : "border-gray-200 bg-white text-gray-900 focus:border-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-gray-500"
+                : "border-gray-200 bg-white text-gray-900 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-teal-500"
           }`}
         />
         {result === null ? (
           <button
             onClick={handleSubmit}
             disabled={!input.trim()}
-            className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+            className="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-40 dark:bg-teal-500 dark:hover:bg-teal-600"
           >
             Check
           </button>
         ) : result === "incorrect" ? (
           <button
             onClick={advance}
-            className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+            className="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
           >
             Continue
           </button>

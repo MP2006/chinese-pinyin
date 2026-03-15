@@ -1,5 +1,13 @@
 const TIMEOUT = 8000;
 
+/** Strip CEDICT-style annotations and trailing punctuation artifacts from translations */
+function cleanTranslation(text: string): string {
+  return text
+    .replace(/\s*\(=\s[^)]*\)\s*/g, " ")
+    .replace(/[:;]+\s*$/, "")
+    .trim();
+}
+
 export async function translateWithLingva(
   text: string,
   targetLang: string
@@ -12,7 +20,7 @@ export async function translateWithLingva(
 
   if (!res.ok) throw new Error(`Lingva returned ${res.status}`);
   const data = await res.json();
-  return data.translation;
+  return cleanTranslation(data.translation);
 }
 
 export async function translateWithMyMemory(
@@ -32,7 +40,7 @@ export async function translateWithMyMemory(
   const text_result = data?.responseData?.translatedText || "";
   if (text_result.startsWith("MYMEMORY WARNING"))
     throw new Error("MyMemory rate limited");
-  return text_result;
+  return cleanTranslation(text_result);
 }
 
 export async function translateText(

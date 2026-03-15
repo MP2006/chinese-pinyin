@@ -116,7 +116,7 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
         </p>
         <button
           onClick={playAgain}
-          className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+          className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
         >
           Play Again
         </button>
@@ -149,7 +149,7 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
                 isMatched
                   ? "scale-90 border-green-300 bg-green-50 opacity-40 dark:border-green-700 dark:bg-green-900/20"
                   : isSelected
-                    ? "border-gray-900 bg-gray-50 shadow-md dark:border-gray-100 dark:bg-gray-700"
+                    ? "border-teal-600 bg-teal-50 shadow-md dark:border-teal-400 dark:bg-teal-900/20"
                     : isShaking
                       ? "animate-shake border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
                       : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"

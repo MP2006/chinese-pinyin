@@ -156,18 +156,18 @@ export default function FlashcardsPage() {
                   }
                   setMode(m.id);
                 }}
-                className="flex flex-col items-start rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+                className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-5 text-center transition-all hover:border-teal-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-teal-700"
               >
                 <div className="mb-3 text-gray-600 dark:text-gray-400">
                   {m.icon}
                 </div>
-                <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {m.label}
                 </h3>
                 <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                   {m.getSubtitle(dueCards.length, totalCount)}
                 </p>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                   {m.description}
                 </p>
               </button>
@@ -183,9 +183,9 @@ export default function FlashcardsPage() {
               {allCards.map((card) => (
                 <div
                   key={card.id}
-                  className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800"
+                  className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800"
                 >
-                  <div className="min-w-0 shrink-0">
+                  <div className="w-24 shrink-0">
                     <span className="text-lg font-medium text-gray-900 dark:text-gray-100">
                       {card.word}
                     </span>
@@ -260,7 +260,7 @@ export default function FlashcardsPage() {
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                     <div
-                      className="h-full rounded-full bg-gray-900 transition-all duration-300 dark:bg-gray-100"
+                      className="h-full rounded-full bg-teal-600 transition-all duration-300 dark:bg-teal-400"
                       style={{ width: `${(currentIndex / dueCards.length) * 100}%` }}
                     />
                   </div>
