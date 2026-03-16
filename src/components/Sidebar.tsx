@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = [
   {
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
@@ -85,6 +87,54 @@ export default function Sidebar() {
       })}
     </nav>
   );
+
+  const userInitial = user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "?";
+
+  const authContent = (mobile: boolean) => {
+    if (authLoading) return null;
+
+    if (!user) {
+      return (
+        <Link
+          href="/login"
+          className={`flex items-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 ${
+            mobile ? "gap-3 px-3 py-2.5" : "justify-center p-2.5"
+          }`}
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          </svg>
+          {mobile && <span className="text-sm font-medium">Sign in</span>}
+        </Link>
+      );
+    }
+
+    return (
+      <div className={`flex items-center ${mobile ? "gap-3 px-3 py-2.5" : "flex-col gap-2"}`}>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-medium text-white dark:bg-teal-500">
+          {userInitial}
+        </div>
+        {mobile && (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              {user.user_metadata?.full_name || user.email}
+            </p>
+          </div>
+        )}
+        <button
+          onClick={signOut}
+          className={`text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 ${
+            mobile ? "" : "rounded-lg p-1"
+          }`}
+          aria-label="Sign out"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+          </svg>
+        </button>
+      </div>
+    );
+  };
 
   const darkModeButton = (mobile: boolean) => (
     <button
@@ -146,7 +196,10 @@ export default function Sidebar() {
             </div>
             <div className="flex h-[calc(100%-3rem)] flex-col justify-between">
               {navContent(true)}
-              {darkModeButton(true)}
+              <div className="space-y-1">
+                {authContent(true)}
+                {darkModeButton(true)}
+              </div>
             </div>
           </aside>
         </div>
@@ -156,7 +209,10 @@ export default function Sidebar() {
       <aside className="fixed left-0 top-0 z-30 hidden h-full w-14 flex-col items-center border-r border-gray-200 bg-white py-4 md:flex dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-1 flex-col justify-between">
           {navContent(false)}
-          {darkModeButton(false)}
+          <div className="flex flex-col items-center gap-2">
+            {authContent(false)}
+            {darkModeButton(false)}
+          </div>
         </div>
       </aside>
     </>

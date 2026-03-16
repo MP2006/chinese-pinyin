@@ -1,15 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  getFlashcards,
-  getDueCards,
-  getTotalCardCount,
-  reviewCard,
-  removeFlashcard,
-  type Flashcard,
-  type ReviewRating,
-} from "@/lib/flashcardStore";
+import { useState, useCallback } from "react";
+import { useFlashcards } from "@/hooks/useFlashcards";
+import type { ReviewRating } from "@/lib/flashcardStore";
 import FlashcardViewer from "@/components/FlashcardViewer";
 import FlashcardBrowse from "@/components/FlashcardBrowse";
 import FlashcardLearn from "@/components/FlashcardLearn";
@@ -65,23 +58,11 @@ const MODES = [
 ];
 
 export default function FlashcardsPage() {
+  const { cards: allCards, dueCards, totalCount, loading, removeCard, reviewCard, refresh } = useFlashcards();
   const [mode, setMode] = useState<Mode>("select");
-  const [allCards, setAllCards] = useState<Flashcard[]>([]);
-  const [dueCards, setDueCards] = useState<Flashcard[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewedCount, setReviewedCount] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
-
-  function refreshCards() {
-    setAllCards(getFlashcards());
-    setDueCards(getDueCards());
-    setTotalCount(getTotalCardCount());
-  }
-
-  useEffect(() => {
-    refreshCards();
-  }, []);
 
   const handleReview = useCallback(
     (id: string, rating: ReviewRating) => {
@@ -95,21 +76,32 @@ export default function FlashcardsPage() {
         setSessionDone(true);
       }
     },
-    [currentIndex, dueCards.length, reviewedCount]
+    [currentIndex, dueCards.length, reviewedCount, reviewCard]
   );
 
   const handleDelete = useCallback((id: string) => {
-    removeFlashcard(id);
-    refreshCards();
-  }, []);
+    removeCard(id);
+  }, [removeCard]);
 
   function goBack() {
     setMode("select");
-    refreshCards();
+    refresh();
     // Reset review state
     setCurrentIndex(0);
     setReviewedCount(0);
     setSessionDone(false);
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white pt-14 transition-colors md:pt-0 dark:bg-gray-900">
+        <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-24 text-center sm:px-6">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading flashcards...</p>
+        </div>
+      </main>
+    );
   }
 
   // Empty state — no cards at all
@@ -149,7 +141,6 @@ export default function FlashcardsPage() {
                 key={m.id}
                 onClick={() => {
                   if (m.id === "review") {
-                    setDueCards(getDueCards());
                     setCurrentIndex(0);
                     setReviewedCount(0);
                     setSessionDone(false);

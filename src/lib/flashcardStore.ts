@@ -86,39 +86,59 @@ export function getTotalCardCount(): number {
   return readStore().length;
 }
 
+export interface SM2Result {
+  interval: number;
+  easeFactor: number;
+  reviewCount: number;
+  nextReview: string;
+}
+
+export function computeSM2(
+  card: Pick<Flashcard, "interval" | "easeFactor" | "reviewCount">,
+  rating: ReviewRating
+): SM2Result {
+  let interval = card.interval;
+  let easeFactor = card.easeFactor;
+  const reviewCount = card.reviewCount + 1;
+  const isNew = interval === 0;
+
+  switch (rating) {
+    case "again":
+      interval = 1;
+      easeFactor = Math.max(1.3, easeFactor - 0.2);
+      break;
+    case "hard":
+      interval = isNew ? 1 : Math.max(1, Math.round(interval * 1.2));
+      easeFactor = Math.max(1.3, easeFactor - 0.15);
+      break;
+    case "good":
+      interval = isNew ? 1 : Math.max(1, Math.round(interval * easeFactor));
+      break;
+    case "easy":
+      interval = isNew
+        ? 4
+        : Math.max(1, Math.round(interval * easeFactor * 1.3));
+      easeFactor += 0.15;
+      break;
+  }
+
+  const next = new Date();
+  next.setDate(next.getDate() + interval);
+  const nextReview = next.toISOString().slice(0, 10);
+
+  return { interval, easeFactor, reviewCount, nextReview };
+}
+
 export function reviewCard(id: string, rating: ReviewRating) {
   const cards = readStore();
   const card = cards.find((c) => c.id === id);
   if (!card) return;
 
-  card.reviewCount++;
-  const isNew = card.interval === 0;
-
-  switch (rating) {
-    case "again":
-      card.interval = 1;
-      card.easeFactor = Math.max(1.3, card.easeFactor - 0.2);
-      break;
-    case "hard":
-      card.interval = isNew ? 1 : Math.max(1, Math.round(card.interval * 1.2));
-      card.easeFactor = Math.max(1.3, card.easeFactor - 0.15);
-      break;
-    case "good":
-      card.interval = isNew
-        ? 1
-        : Math.max(1, Math.round(card.interval * card.easeFactor));
-      break;
-    case "easy":
-      card.interval = isNew
-        ? 4
-        : Math.max(1, Math.round(card.interval * card.easeFactor * 1.3));
-      card.easeFactor += 0.15;
-      break;
-  }
-
-  const next = new Date();
-  next.setDate(next.getDate() + card.interval);
-  card.nextReview = next.toISOString().slice(0, 10);
+  const result = computeSM2(card, rating);
+  card.interval = result.interval;
+  card.easeFactor = result.easeFactor;
+  card.reviewCount = result.reviewCount;
+  card.nextReview = result.nextReview;
 
   writeStore(cards);
 }

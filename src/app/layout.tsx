@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Sidebar from "@/components/Sidebar";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -35,8 +36,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <Sidebar />
-        <div className="md:ml-14">{children}</div>
+        <AuthProvider>
+          <Sidebar />
+          <div className="md:ml-14">{children}</div>
+        </AuthProvider>
       </body>
     </html>
   );

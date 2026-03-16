@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import PinyinDisplay from "@/components/PinyinDisplay";
 import SelectionToolbar from "@/components/SelectionToolbar";
 import DefinitionPopup from "@/components/DefinitionPopup";
+import { useFlashcards } from "@/hooks/useFlashcards";
 import { JSONContent } from "@tiptap/react";
 import { logApiCall } from "@/lib/apiUsage";
 
@@ -14,6 +15,7 @@ type Lang = "en" | "vi";
 const LANG_LABELS: Record<Lang, string> = { en: "EN", vi: "VI" };
 
 export default function Home() {
+  const { addCard, hasCard } = useFlashcards();
   const [plainText, setPlainText] = useState("");
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
   const [translations, setTranslations] = useState<Record<string, string>>({});
@@ -281,6 +283,8 @@ export default function Home() {
                   loading={definitionLoading}
                   enabledLanguages={enabledLanguages}
                   onClose={() => setSelectedWord(null)}
+                  onAddCard={addCard}
+                  isSaved={hasCard(selectedWord)}
                 />
               )}
             </div>

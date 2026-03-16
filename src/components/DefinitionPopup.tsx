@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { addFlashcard, hasFlashcard } from "@/lib/flashcardStore";
 
 interface DefinitionPopupProps {
   word: string;
@@ -11,11 +10,13 @@ interface DefinitionPopupProps {
   loading: boolean;
   enabledLanguages: Set<string>;
   onClose: () => void;
+  onAddCard: (word: string, pinyin: string, definitions: Record<string, string>) => void;
+  isSaved: boolean;
 }
 
 const LANG_NAMES: Record<string, string> = {
   en: "English",
-  vi: "Tiếng Việt",
+  vi: "Ti\u1EBFng Vi\u1EC7t",
 };
 
 export default function DefinitionPopup({
@@ -26,13 +27,16 @@ export default function DefinitionPopup({
   loading,
   enabledLanguages,
   onClose,
+  onAddCard,
+  isSaved: isSavedProp,
 }: DefinitionPopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(isSavedProp);
 
+  // Sync when prop changes (e.g. different word selected)
   useEffect(() => {
-    setSaved(hasFlashcard(word));
-  }, [word]);
+    setSaved(isSavedProp);
+  }, [isSavedProp]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -85,7 +89,7 @@ export default function DefinitionPopup({
             <button
               onClick={() => {
                 if (!loading) {
-                  addFlashcard(word, pinyin, definitions);
+                  onAddCard(word, pinyin, definitions);
                   setSaved(true);
                 }
               }}
@@ -124,7 +128,7 @@ export default function DefinitionPopup({
                 {LANG_NAMES[lang] || lang}
               </div>
               <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                {(definitions[lang] || "—").split("\n").map((line, i) => (
+                {(definitions[lang] || "\u2014").split("\n").map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
               </div>
