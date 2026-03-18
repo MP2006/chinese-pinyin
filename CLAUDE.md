@@ -8,6 +8,8 @@ Chinese language learning tool: type/paste Chinese text, see pinyin + translatio
 npm run dev          # Start dev server (Turbopack)
 npm run build        # Production build — run this to verify changes
 npm run lint         # ESLint
+npm test             # Run all tests (vitest run)
+npm run test:watch   # Run tests in watch mode
 npm run build:dict   # Regenerate CC-CEDICT dictionary (src/data/cedict.json)
 ```
 
@@ -63,12 +65,16 @@ src/
 │       ├── client.ts         # Browser Supabase client
 │       ├── server.ts         # Server Supabase client (cookies-based)
 │       └── types.ts          # FlashcardRow type + DB-to-app mapper
+├── __test__/
+│   └── setup.ts              # Vitest setup (jest-dom matchers, cleanup, crypto polyfill)
 ├── middleware.ts              # Supabase session refresh
 ├── data/
 │   └── cedict.json           # CC-CEDICT dictionary (~120K entries, GENERATED — do not edit)
 └── types/
     └── speech.d.ts
 ```
+
+Test files live in `__test__/` subdirectories alongside the code they test (e.g. `src/lib/__test__/flashcardStore.test.ts`).
 
 ## Architecture Decisions
 
@@ -89,13 +95,24 @@ All flashcard sub-components (Viewer, Browse, Learn, Match) receive data as **pr
 ### CC-CEDICT Dictionary
 `src/data/cedict.json` is **generated** (in `.gitignore`). Regenerate with `npm run build:dict`. In API routes, load it with `fs.readFileSync` + lazy init — do NOT use `import` for large JSON to avoid webpack bundling issues.
 
+### Testing
+**Vitest** with `@testing-library/react` and `@testing-library/user-event`. Config in `vitest.config.ts`. **189 tests across 18 files.**
+
+- **Default environment**: `node` (fast for pure function tests). Tests needing DOM/localStorage opt in with `// @vitest-environment jsdom` at the top of the file.
+- **Setup file**: `src/__test__/setup.ts` — imports jest-dom matchers, runs `cleanup()` after each test, polyfills `crypto.randomUUID`.
+- **Test location**: `__test__/` subdirectory next to source (e.g. `src/lib/__test__/flashcardStore.test.ts`). Import the source via `../` relative paths; `@/` aliases work for cross-module imports.
+- **Mocking patterns**: `vi.mock()` for modules, `vi.stubGlobal("fetch", vi.fn())` for fetch, `vi.hoisted()` for mocks needed before module-level side effects (e.g. Supabase `createClient()` at import time, or mutable mock state in Editor tests).
+- **Fake timers**: Use `vi.useFakeTimers()` / `vi.setSystemTime()` for date-dependent logic (SM-2 scheduling, API usage pruning). Prefer `fireEvent` over `userEvent` when combining with fake timers and `setInterval` (avoids timeout issues).
+- **Module-level singletons**: Use `vi.resetModules()` + dynamic `await import()` in `beforeEach` to reset module-level cached state (e.g. TTS route's `ttsClient` variable).
+- **Constructor mocks**: Use ES6 classes (not `vi.fn().mockImplementation()`) when mocking classes used with `new` (e.g. `MsEdgeTTS`, `Audio`).
+
 ## Conventions
 
 - **Path alias**: `@/*` maps to `./src/*`
 - **Client components**: Use `"use client"` directive. All pages except layout are client components.
 - **Dark mode**: Toggle via `document.documentElement.classList.toggle("dark")`, persisted in localStorage. Inline script in `<head>` prevents flash.
 - **Styling**: Tailwind utility classes only. Dark mode via `dark:` variants. Accent color is teal (`teal-600` light / `teal-400` dark).
-- **No test framework** currently configured.
+- **Testing**: Vitest + Testing Library. Tests in `__test__/` subdirectories. Use `// @vitest-environment jsdom` comment for tests needing DOM/localStorage (default is `node`).
 - **`useSearchParams()`** must be wrapped in a `<Suspense>` boundary (Next.js 16 requirement).
 - Next.js 16 shows a deprecation warning for `middleware` (recommends `proxy`) — this is non-blocking.
 

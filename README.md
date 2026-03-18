@@ -93,6 +93,24 @@ Open [http://localhost:3000](http://localhost:3000) to use the app.
 | `npm run build` | Production build |
 | `npm run start` | Serve production build |
 | `npm run build:dict` | Generate `src/data/cedict.json` from CC-CEDICT |
+| `npm test` | Run all tests once |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage report |
+
+## Testing
+
+189 tests across 18 test files using [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/).
+
+Tests live in `__test__` subdirectories next to the code they test:
+
+| Directory | What's tested |
+|-----------|---------------|
+| `src/lib/__test__/` | Pure functions: SM-2 algorithm, text comparison, API usage tracking, translation utils |
+| `src/lib/supabase/__test__/` | DB-to-app type mapper |
+| `src/hooks/__test__/` | `useFlashcards` hook, `useTTS` hook |
+| `src/contexts/__test__/` | `AuthContext` (auth provider, sign out, state changes) |
+| `src/app/api/*/__test__/` | API route handlers (`/api/translate`, `/api/define`, `/api/tts`) |
+| `src/components/__test__/` | React components (`DefinitionPopup`, `FlashcardViewer`, `FlashcardBrowse`, `FlashcardLearn`, `FlashcardMatch`, `PinyinDisplay`, `Editor`) |
 
 ## Tech Stack
 
@@ -103,3 +121,4 @@ Open [http://localhost:3000](http://localhost:3000) to use the app.
 - **TTS**: msedge-tts
 - **Dictionary**: CC-CEDICT
 - **Translation**: Lingva API, MyMemory API
+- **Testing**: Vitest, Testing Library
