@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Flashcard, ReviewRating } from "@/lib/flashcardStore";
 import { useTTS } from "@/hooks/useTTS";
+import { SpeakerIcon, SpeakerWaveIcon } from "./Icons";
 
 function SpeakerButton({ speaking, onClick }: { speaking: boolean; onClick: (e: React.MouseEvent) => void }) {
   return (
@@ -13,13 +14,9 @@ function SpeakerButton({ speaking, onClick }: { speaking: boolean; onClick: (e: 
       aria-label="Speak word"
     >
       {speaking ? (
-        <svg className="h-4 w-4 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-        </svg>
+        <SpeakerWaveIcon className="h-4 w-4 animate-pulse" />
       ) : (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
-        </svg>
+        <SpeakerIcon className="h-4 w-4" />
       )}
     </button>
   );

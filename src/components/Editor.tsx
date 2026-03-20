@@ -7,6 +7,7 @@ import { JSONContent } from "@tiptap/react";
 import { isSpeechRecognitionSupported } from "./SpeechPractice";
 import { logApiCall } from "@/lib/apiUsage";
 import { useOCR, extractChineseLines, type OCRLine } from "@/hooks/useOCR";
+import { CloseIcon, CheckIcon } from "./Icons";
 import {
   readClipboardImage,
   isClipboardReadSupported,
@@ -447,9 +448,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                 className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                 aria-label="Dismiss"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <CloseIcon />
               </button>
             </div>
           </div>
@@ -519,9 +518,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                     >
                       {inserted && (
                         <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-white shadow-sm">
-                          <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          <CheckIcon className="h-2.5 w-2.5" />
                         </span>
                       )}
                     </button>

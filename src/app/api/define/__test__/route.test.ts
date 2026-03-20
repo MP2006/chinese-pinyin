@@ -23,6 +23,10 @@ vi.mock("@/lib/translate", () => ({
   translateText: vi.fn(),
 }));
 
+vi.mock("@/lib/rateLimit", () => ({
+  rateLimit: vi.fn().mockResolvedValue({ limited: false, retryAfter: 0 }),
+}));
+
 import { POST } from "../route";
 import { translateText } from "@/lib/translate";
 import { pinyin, segment } from "pinyin-pro";

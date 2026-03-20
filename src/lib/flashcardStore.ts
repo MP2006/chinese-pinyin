@@ -14,9 +14,7 @@ export type ReviewRating = "again" | "hard" | "good" | "easy";
 
 const STORAGE_KEY = "flashcards";
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayStr } from "./dateUtils";
 
 function readStore(): Flashcard[] {
   if (typeof window === "undefined") return [];

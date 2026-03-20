@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { CloseIcon } from "./Icons";
 
 const NAV_ITEMS = [
   {
@@ -189,9 +190,7 @@ export default function Sidebar() {
                 className="rounded-lg p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                 aria-label="Close menu"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon className="h-5 w-5" />
               </button>
             </div>
             <div className="flex h-[calc(100%-3rem)] flex-col justify-between">

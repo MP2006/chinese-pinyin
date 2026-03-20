@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
-
-let ttsClient: MsEdgeTTS | null = null;
-
-async function getClient(): Promise<MsEdgeTTS> {
-  if (!ttsClient) {
-    ttsClient = new MsEdgeTTS();
-    await ttsClient.setMetadata(
-      "zh-CN-XiaoxiaoNeural",
-      OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3
-    );
-  }
-  return ttsClient;
-}
+import { rateLimit } from "@/lib/rateLimit";
+import { synthesize } from "@/lib/ttsPool";
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { limited, retryAfter } = await rateLimit(`tts:${ip}`, {
+    maxRequests: 30,
+    windowMs: 60_000,
+  });
+  if (limited) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
   const { text } = (await request.json()) as { text: string };
 
   if (!text || typeof text !== "string" || text.trim().length === 0) {
@@ -26,25 +26,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const client = await getClient();
-    const { audioStream } = client.toStream(text, { rate: 0.9 });
+    const { audioStream } = await synthesize(text);
 
-    const chunks: Buffer[] = [];
-    for await (const chunk of audioStream) {
-      chunks.push(Buffer.from(chunk));
-    }
-    const audio = Buffer.concat(chunks);
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of audioStream) {
+            controller.enqueue(new Uint8Array(chunk));
+          }
+          controller.close();
+        } catch {
+          controller.error(new Error("TTS stream failed"));
+        }
+      },
+    });
 
-    return new NextResponse(audio, {
+    return new NextResponse(stream, {
       headers: {
         "Content-Type": "audio/mpeg",
-        "Content-Length": String(audio.length),
+        "Transfer-Encoding": "chunked",
       },
     });
   } catch (error) {
     console.error("TTS error:", error);
-    // Reset client on error so next request creates a fresh connection
-    ttsClient = null;
     return NextResponse.json(
       { error: "TTS generation failed" },
       { status: 500 }

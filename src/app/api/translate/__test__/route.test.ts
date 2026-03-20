@@ -4,6 +4,10 @@ vi.mock("@/lib/translate", () => ({
   translateText: vi.fn(),
 }));
 
+vi.mock("@/lib/rateLimit", () => ({
+  rateLimit: vi.fn().mockResolvedValue({ limited: false, retryAfter: 0 }),
+}));
+
 import { POST } from "../route";
 import { translateText } from "@/lib/translate";
 
@@ -84,5 +88,42 @@ describe("POST /api/translate", () => {
     const json = await res.json();
 
     expect(json.translation).toBe("Translation unavailable");
+  });
+
+  it("rejects text exceeding 10,000 characters", async () => {
+    const longText = "你".repeat(10_001);
+    const res = await POST(makeRequest({ text: longText, targetLang: "en" }) as any);
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/too long/i);
+  });
+
+  it("maintains line order with many lines", async () => {
+    const lineCount = 20;
+    const lines = Array.from({ length: lineCount }, (_, i) => `行${i}`);
+    const text = lines.join("\n");
+
+    vi.mocked(translateText).mockImplementation(async (line: string) => {
+      // Simulate varying response times
+      await new Promise((r) => setTimeout(r, Math.random() * 10));
+      return `translated:${line}`;
+    });
+
+    const res = await POST(makeRequest({ text, targetLang: "en" }) as any);
+    const json = await res.json();
+
+    const resultLines = json.translation.split("\n");
+    expect(resultLines).toHaveLength(lineCount);
+    lines.forEach((line, i) => {
+      expect(resultLines[i]).toBe(`translated:${line}`);
+    });
+  });
+
+  it("rejects text exceeding 100 lines", async () => {
+    const manyLines = Array(101).fill("你好").join("\n");
+    const res = await POST(makeRequest({ text: manyLines, targetLang: "en" }) as any);
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/too many lines/i);
   });
 });

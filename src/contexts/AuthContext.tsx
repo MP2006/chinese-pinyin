@@ -10,6 +10,9 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+// Module-level singleton — stable reference, never in dependency arrays
+const supabase = createClient();
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -25,7 +28,6 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     // Get initial session
@@ -43,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   async function signOut() {
     await supabase.auth.signOut();

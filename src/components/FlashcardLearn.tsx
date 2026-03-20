@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { Flashcard } from "@/lib/flashcardStore";
 import { useTTS } from "@/hooks/useTTS";
+import { SpeakerIcon, CheckCircleIcon } from "./Icons";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -77,9 +78,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
   if (done) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
-        <svg className="mb-4 h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <CheckCircleIcon className="mb-4 h-12 w-12 text-green-400" />
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Session complete!</h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           {correctCount} of {shuffled.length} correct
@@ -184,9 +183,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
             className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
             aria-label="Speak word"
           >
-            <svg className={`h-3.5 w-3.5 ${speaking ? "animate-pulse" : ""}`} viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
-            </svg>
+            <SpeakerIcon className={`h-3.5 w-3.5 ${speaking ? "animate-pulse" : ""}`} />
           </button>
         </div>
       )}

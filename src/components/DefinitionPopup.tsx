@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CheckIcon, CloseIcon } from "./Icons";
 
 interface DefinitionPopupProps {
   word: string;
@@ -81,9 +82,7 @@ export default function DefinitionPopup({
         <div className="ml-auto flex items-center gap-1">
           {saved ? (
             <span className="p-1 text-green-500" aria-label="Saved">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              <CheckIcon />
             </span>
           ) : (
             <button
@@ -107,9 +106,7 @@ export default function DefinitionPopup({
           className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           aria-label="Close"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <CloseIcon />
         </button>
         </div>
       </div>

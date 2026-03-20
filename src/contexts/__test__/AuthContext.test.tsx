@@ -1,17 +1,18 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
-import { AuthProvider, useAuth } from "../AuthContext";
 
-// Track the onAuthStateChange callback so we can trigger it in tests
-const mockUnsubscribe = vi.fn();
-let authStateCallback: (event: string, session: { user: object } | null) => void;
-
-const mockGetUser = vi.fn();
-const mockSignOut = vi.fn().mockResolvedValue({});
-const mockOnAuthStateChange = vi.fn().mockImplementation((cb) => {
-  authStateCallback = cb;
-  return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
+// Use vi.hoisted because AuthContext.tsx calls createClient() at module scope
+const { mockGetUser, mockSignOut, mockOnAuthStateChange, mockUnsubscribe, authStateRef } = vi.hoisted(() => {
+  const mockUnsubscribe = vi.fn();
+  const authStateRef: { callback: ((event: string, session: { user: object } | null) => void) | null } = { callback: null };
+  const mockGetUser = vi.fn();
+  const mockSignOut = vi.fn().mockResolvedValue({});
+  const mockOnAuthStateChange = vi.fn().mockImplementation((cb: (event: string, session: { user: object } | null) => void) => {
+    authStateRef.callback = cb;
+    return { data: { subscription: { unsubscribe: mockUnsubscribe } } };
+  });
+  return { mockGetUser, mockSignOut, mockOnAuthStateChange, mockUnsubscribe, authStateRef };
 });
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -23,6 +24,8 @@ vi.mock("@/lib/supabase/client", () => ({
     },
   }),
 }));
+
+import { AuthProvider, useAuth } from "../AuthContext";
 
 // Test consumer that renders auth context values
 function TestConsumer() {
@@ -97,7 +100,7 @@ describe("AuthContext", () => {
 
     // Simulate auth state change (user signs in)
     act(() => {
-      authStateCallback("SIGNED_IN", { user: fakeUser });
+      authStateRef.callback("SIGNED_IN", { user: fakeUser });
     });
 
     expect(screen.getByTestId("user").textContent).toBe("test@example.com");
@@ -129,7 +132,7 @@ describe("AuthContext", () => {
     // The component also calls setUser(null) directly, but React batching
     // in the async context may not flush it. Simulate the auth change:
     act(() => {
-      authStateCallback("SIGNED_OUT", null);
+      authStateRef.callback("SIGNED_OUT", null);
     });
 
     expect(screen.getByTestId("user").textContent).toBe("null");

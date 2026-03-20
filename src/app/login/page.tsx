@@ -4,6 +4,9 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+// Module-level singleton — stable reference
+const supabase = createClient();
+
 type Mode = "login" | "signup";
 
 function LoginForm() {
@@ -16,8 +19,6 @@ function LoginForm() {
   const [error, setError] = useState(
     searchParams.get("error") === "auth" ? "Authentication failed. Please try again." : ""
   );
-
-  const supabase = createClient();
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();

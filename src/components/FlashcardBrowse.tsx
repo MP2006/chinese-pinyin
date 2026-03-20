@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Flashcard } from "@/lib/flashcardStore";
 import { useTTS } from "@/hooks/useTTS";
+import { SpeakerIcon } from "./Icons";
 
 interface FlashcardBrowseProps {
   cards: Flashcard[];
@@ -73,9 +74,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
                       disabled={speaking}
                       aria-label="Speak word"
                     >
-                      <svg className={`h-3.5 w-3.5 ${speaking ? "animate-pulse" : ""}`} viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
-                      </svg>
+                      <SpeakerIcon className={`h-3.5 w-3.5 ${speaking ? "animate-pulse" : ""}`} />
                     </button>
                     {/* Delete */}
                     <button

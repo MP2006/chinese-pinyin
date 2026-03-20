@@ -1,21 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-// Mock msedge-tts
-const mockSetMetadata = vi.fn().mockResolvedValue(undefined);
-const mockToStream = vi.fn();
+const mockSynthesize = vi.fn();
 
-vi.mock("msedge-tts", () => {
-  return {
-    MsEdgeTTS: class MockMsEdgeTTS {
-      setMetadata = mockSetMetadata;
-      toStream = mockToStream;
-    },
-    OUTPUT_FORMAT: {
-      AUDIO_24KHZ_96KBITRATE_MONO_MP3: "audio-24khz-96kbitrate-mono-mp3",
-    },
-  };
-});
+vi.mock("@/lib/ttsPool", () => ({
+  synthesize: (...args: unknown[]) => mockSynthesize(...args),
+}));
+
+vi.mock("@/lib/rateLimit", () => ({
+  rateLimit: vi.fn().mockResolvedValue({ limited: false, retryAfter: 0 }),
+}));
+
+import { POST } from "../route";
 
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/tts", {
@@ -36,17 +32,9 @@ function makeAsyncIterable(chunks: Buffer[]) {
 }
 
 describe("POST /api/tts", () => {
-  let POST: (req: NextRequest) => Promise<Response>;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    // Reset module so ttsClient is null each test
-    vi.resetModules();
-    const mod = await import("../route");
-    POST = mod.POST;
-
-    // Default: return small audio buffer
-    mockToStream.mockReturnValue({
+    mockSynthesize.mockResolvedValue({
       audioStream: makeAsyncIterable([Buffer.from("fake-audio-data")]),
     });
   });
@@ -55,7 +43,7 @@ describe("POST /api/tts", () => {
     const res = await POST(makeRequest({ text: "你好" }));
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("audio/mpeg");
-    expect(res.headers.get("Content-Length")).toBeTruthy();
+    expect(res.headers.get("Transfer-Encoding")).toBe("chunked");
 
     const body = await res.arrayBuffer();
     expect(body.byteLength).toBeGreaterThan(0);
@@ -97,8 +85,17 @@ describe("POST /api/tts", () => {
     expect(json.error).toBe("No text provided");
   });
 
-  it("returns 500 on TTS stream error and resets client", async () => {
-    mockToStream.mockReturnValueOnce({
+  it("returns 500 on TTS synthesis error", async () => {
+    mockSynthesize.mockRejectedValueOnce(new Error("Pool error"));
+
+    const res = await POST(makeRequest({ text: "你好" }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toBe("TTS generation failed");
+  });
+
+  it("returns errored stream on TTS stream failure", async () => {
+    mockSynthesize.mockResolvedValueOnce({
       audioStream: {
         async *[Symbol.asyncIterator]() {
           throw new Error("Stream failed");
@@ -107,17 +104,13 @@ describe("POST /api/tts", () => {
     });
 
     const res = await POST(makeRequest({ text: "你好" }));
-    expect(res.status).toBe(500);
-    const json = await res.json();
-    expect(json.error).toBe("TTS generation failed");
+    // Response is returned immediately as 200 (streaming), but the body errors
+    expect(res.status).toBe(200);
+    await expect(res.arrayBuffer()).rejects.toThrow();
+  });
 
-    // Next request should re-create client (setMetadata called again)
-    mockSetMetadata.mockClear();
-    mockToStream.mockReturnValue({
-      audioStream: makeAsyncIterable([Buffer.from("audio")]),
-    });
-    const res2 = await POST(makeRequest({ text: "好" }));
-    expect(res2.status).toBe(200);
-    expect(mockSetMetadata).toHaveBeenCalledTimes(1);
+  it("passes text to synthesize", async () => {
+    await POST(makeRequest({ text: "你好世界" }));
+    expect(mockSynthesize).toHaveBeenCalledWith("你好世界");
   });
 });

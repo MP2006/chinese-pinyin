@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { Flashcard } from "@/lib/flashcardStore";
+import { CheckCircleIcon } from "./Icons";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -107,9 +108,7 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
   if (complete) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
-        <svg className="mb-4 h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <CheckCircleIcon className="mb-4 h-12 w-12 text-green-400" />
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">All matched!</h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Time: {formatTime(elapsed)}

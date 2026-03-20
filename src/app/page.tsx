@@ -6,6 +6,7 @@ import PinyinDisplay from "@/components/PinyinDisplay";
 import SelectionToolbar from "@/components/SelectionToolbar";
 import DefinitionPopup from "@/components/DefinitionPopup";
 import { useFlashcards } from "@/hooks/useFlashcards";
+import { useWordDefinition } from "@/hooks/useWordDefinition";
 import { JSONContent } from "@tiptap/react";
 import { logApiCall } from "@/lib/apiUsage";
 
@@ -25,21 +26,19 @@ export default function Home() {
   const [translatingLangs, setTranslatingLangs] = useState<Set<string>>(
     new Set()
   );
-  // Word definition state
-  const [selectedWord, setSelectedWord] = useState<string | null>(null);
-  const [wordPosition, setWordPosition] = useState({ top: 0, left: 0 });
-  const [wordDefinition, setWordDefinition] = useState<{
-    pinyin: string;
-    definitions: Record<string, string>;
-  }>({ pinyin: "", definitions: {} });
-  const [definitionLoading, setDefinitionLoading] = useState(false);
 
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pinyinContainerRef = useRef<HTMLDivElement>(null);
-  const wordCacheRef = useRef<
-    Record<string, { pinyin: string; definitions: Record<string, string> }>
-  >({});
+
+  const {
+    selectedWord,
+    wordPosition,
+    wordDefinition,
+    definitionLoading,
+    handleWordClick,
+    clearSelection,
+  } = useWordDefinition(pinyinContainerRef, enabledLanguages);
 
   const fetchTranslation = useCallback(
     async (text: string, lang: string) => {
@@ -149,77 +148,6 @@ export default function Home() {
     });
   };
 
-  const handleWordClick = useCallback(
-    async (word: string, event: React.MouseEvent) => {
-      if (!pinyinContainerRef.current) return;
-
-      const containerRect =
-        pinyinContainerRef.current.getBoundingClientRect();
-      const target = event.currentTarget as HTMLElement;
-      const targetRect = target.getBoundingClientRect();
-
-      const top = targetRect.bottom - containerRect.top + 4;
-      let left = targetRect.left - containerRect.left;
-      // Clamp so popup doesn't overflow right edge (popup is 288px wide)
-      const maxLeft = containerRect.width - 288;
-      if (left > maxLeft) left = Math.max(0, maxLeft);
-
-      setWordPosition({ top, left });
-      setSelectedWord(word);
-
-      const langs = Array.from(enabledLanguages);
-      const cached = wordCacheRef.current[word];
-
-      // Check which langs are already cached
-      const missingLangs = cached
-        ? langs.filter((l) => !(l in cached.definitions))
-        : langs;
-
-      if (missingLangs.length === 0 && cached) {
-        setWordDefinition(cached);
-        setDefinitionLoading(false);
-        return;
-      }
-
-      // Show cached data immediately if available
-      if (cached) {
-        setWordDefinition(cached);
-      } else {
-        setWordDefinition({ pinyin: "", definitions: {} });
-      }
-      setDefinitionLoading(true);
-
-      try {
-        const res = await fetch("/api/define", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ word, langs: missingLangs }),
-        });
-        const data = await res.json();
-        logApiCall("/api/define", word.length);
-
-        // Merge into cache
-        const existing = wordCacheRef.current[word] || {
-          pinyin: data.pinyin,
-          definitions: {},
-        };
-        const merged = {
-          pinyin: data.pinyin || existing.pinyin,
-          definitions: { ...existing.definitions, ...data.definitions },
-        };
-        wordCacheRef.current[word] = merged;
-
-        setWordDefinition(merged);
-      } catch {
-        // Show whatever we have cached
-        if (cached) setWordDefinition(cached);
-      } finally {
-        setDefinitionLoading(false);
-      }
-    },
-    [enabledLanguages]
-  );
-
   const hasContent = plainText.trim().length > 0;
   const showTranslations = enabledLanguages.size > 0 && hasContent;
 
@@ -282,7 +210,7 @@ export default function Home() {
                   definitions={wordDefinition.definitions}
                   loading={definitionLoading}
                   enabledLanguages={enabledLanguages}
-                  onClose={() => setSelectedWord(null)}
+                  onClose={clearSelection}
                   onAddCard={addCard}
                   isSaved={hasCard(selectedWord)}
                 />

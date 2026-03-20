@@ -7,6 +7,7 @@ import FlashcardViewer from "@/components/FlashcardViewer";
 import FlashcardBrowse from "@/components/FlashcardBrowse";
 import FlashcardLearn from "@/components/FlashcardLearn";
 import FlashcardMatch from "@/components/FlashcardMatch";
+import { CloseIcon } from "@/components/Icons";
 
 type Mode = "select" | "review" | "browse" | "learn" | "match";
 
@@ -58,7 +59,7 @@ const MODES = [
 ];
 
 export default function FlashcardsPage() {
-  const { cards: allCards, dueCards, totalCount, loading, removeCard, reviewCard, refresh } = useFlashcards();
+  const { cards: allCards, dueCards, totalCount, loading, syncError, clearSyncError, removeCard, reviewCard, refresh } = useFlashcards();
   const [mode, setMode] = useState<Mode>("select");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewedCount, setReviewedCount] = useState(0);
@@ -126,6 +127,14 @@ export default function FlashcardsPage() {
     return (
       <main className="min-h-screen bg-white pt-14 transition-colors md:pt-0 dark:bg-gray-900">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+          {syncError && (
+            <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+              <span>{syncError}</span>
+              <button onClick={clearSyncError} className="ml-3 shrink-0 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300" aria-label="Dismiss error">
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
               Flashcards

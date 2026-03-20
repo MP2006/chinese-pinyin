@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pinyin, segment } from "pinyin-pro";
 import { translateText } from "@/lib/translate";
+import { rateLimit } from "@/lib/rateLimit";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -66,7 +67,21 @@ function lookupEnglish(word: string): string {
   return "No definition found";
 }
 
+const MAX_WORD_LENGTH = 50;
+
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { limited, retryAfter } = await rateLimit(`define:${ip}`, {
+    maxRequests: 60,
+    windowMs: 60_000,
+  });
+  if (limited) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
   const { word, langs } = (await request.json()) as {
     word: string;
     langs: string[];
@@ -74,6 +89,13 @@ export async function POST(request: NextRequest) {
 
   if (!word || typeof word !== "string" || !Array.isArray(langs)) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (word.length > MAX_WORD_LENGTH) {
+    return NextResponse.json(
+      { error: `Word too long (max ${MAX_WORD_LENGTH} characters)` },
+      { status: 400 }
+    );
   }
 
   const wordPinyin = pinyin(word, { toneType: "symbol" });

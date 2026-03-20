@@ -336,6 +336,92 @@ describe("useFlashcards", () => {
     });
   });
 
+  describe("sync error handling", () => {
+    const fakeUser = { id: "user-123" };
+
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ user: fakeUser, loading: false });
+      localStorage.setItem("flashcards_migrated", "1");
+    });
+
+    it("sets syncError when addCard insert fails", async () => {
+      mockChain.order.mockResolvedValue({ data: [], error: null });
+      mockChain.insert.mockResolvedValue({ error: { message: "insert failed" } });
+
+      const { result } = renderHook(() => useFlashcards());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.addCard("世界", "shì jiè", { en: "world" });
+      });
+
+      expect(result.current.syncError).toBe("Failed to save card. Please try again.");
+    });
+
+    it("reverts optimistic update on sync failure", async () => {
+      const dbRows = [
+        {
+          id: "sb-1",
+          user_id: "user-123",
+          word: "你好",
+          pinyin: "nǐ hǎo",
+          definitions: { en: "hello" },
+          created_at: "2024-06-15T00:00:00Z",
+          next_review: "2024-06-15",
+          interval: 0,
+          ease_factor: 2.5,
+          review_count: 0,
+        },
+      ];
+      mockChain.order.mockResolvedValue({ data: dbRows, error: null });
+
+      const { result } = renderHook(() => useFlashcards());
+
+      await waitFor(() => {
+        expect(result.current.cards).toHaveLength(1);
+      });
+
+      // Make delete fail — eq needs to remain chainable, but last eq returns error
+      const errorResult = { error: { message: "delete failed" } };
+      mockChain.eq.mockReturnValueOnce({ ...errorResult, eq: vi.fn().mockReturnValue(errorResult) });
+
+      await act(async () => {
+        await result.current.removeCard("sb-1");
+      });
+
+      // After refresh, cards should be restored from the server data
+      await waitFor(() => {
+        expect(result.current.syncError).toBe("Failed to delete card. Please try again.");
+      });
+    });
+
+    it("clearSyncError resets error to null", async () => {
+      mockChain.order.mockResolvedValue({ data: [], error: null });
+      mockChain.insert.mockResolvedValue({ error: { message: "insert failed" } });
+
+      const { result } = renderHook(() => useFlashcards());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.addCard("世界", "shì jiè", { en: "world" });
+      });
+
+      expect(result.current.syncError).not.toBeNull();
+
+      act(() => {
+        result.current.clearSyncError();
+      });
+
+      expect(result.current.syncError).toBeNull();
+    });
+  });
+
   describe("dueCards", () => {
     it("filters to only cards due today or earlier", () => {
       mockUseAuth.mockReturnValue({ user: null, loading: false });

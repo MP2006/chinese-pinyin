@@ -17,17 +17,16 @@ import {
 
 const MIGRATED_KEY = "flashcards_migrated";
 
+import { todayStr } from "@/lib/dateUtils";
+
 // Module-level singleton — stable reference, never in dependency arrays
 const supabase = createClient();
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function useFlashcards() {
   const { user, loading: authLoading } = useAuth();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
   // Ref always holds the latest cards — avoids stale closures in callbacks
   const cardsRef = useRef(cards);
   cardsRef.current = cards;
@@ -85,6 +84,8 @@ export function useFlashcards() {
         if (!error) {
           localStorage.setItem(MIGRATED_KEY, "1");
           refresh(); // One-time full fetch after migration
+        } else {
+          setSyncError("Migration failed — local cards were not synced.");
         }
       });
   }, [user, authLoading, refresh]);
@@ -114,6 +115,8 @@ export function useFlashcards() {
         return;
       }
 
+      setSyncError(null);
+
       // Read current state from ref to avoid stale closure
       const existing = cardsRef.current.find((c) => c.word === word);
 
@@ -126,10 +129,15 @@ export function useFlashcards() {
           )
         );
         // Background sync
-        await supabase
+        const { error } = await supabase
           .from("flashcards")
           .update({ definitions: mergedDefs })
-          .eq("id", existing.id);
+          .eq("id", existing.id)
+          .eq("user_id", user.id);
+        if (error) {
+          setSyncError("Failed to save card. Please try again.");
+          refresh();
+        }
       } else {
         // Optimistic update
         setCards((prev) => [
@@ -147,15 +155,19 @@ export function useFlashcards() {
           ...prev,
         ]);
         // Background sync
-        await supabase.from("flashcards").insert({
+        const { error } = await supabase.from("flashcards").insert({
           user_id: user.id,
           word,
           pinyin,
           definitions,
         });
+        if (error) {
+          setSyncError("Failed to save card. Please try again.");
+          refresh();
+        }
       }
     },
-    [user]
+    [user, refresh]
   );
 
   const removeCard = useCallback(
@@ -166,13 +178,19 @@ export function useFlashcards() {
         return;
       }
 
+      setSyncError(null);
+
       // Optimistic: remove from local state immediately
       setCards((prev) => prev.filter((c) => c.id !== id));
 
       // Background sync
-      await supabase.from("flashcards").delete().eq("id", id);
+      const { error } = await supabase.from("flashcards").delete().eq("id", id).eq("user_id", user.id);
+      if (error) {
+        setSyncError("Failed to delete card. Please try again.");
+        refresh();
+      }
     },
-    [user]
+    [user, refresh]
   );
 
   const hasCard = useCallback(
@@ -190,6 +208,8 @@ export function useFlashcards() {
         setCards(getFlashcards());
         return;
       }
+
+      setSyncError(null);
 
       // Read current card from ref to avoid stale closure
       const card = cardsRef.current.find((c) => c.id === id);
@@ -213,7 +233,7 @@ export function useFlashcards() {
       );
 
       // Background sync
-      await supabase
+      const { error } = await supabase
         .from("flashcards")
         .update({
           interval: sm2.interval,
@@ -221,16 +241,25 @@ export function useFlashcards() {
           review_count: sm2.reviewCount,
           next_review: sm2.nextReview,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (error) {
+        setSyncError("Failed to save review. Please try again.");
+        refresh();
+      }
     },
-    [user]
+    [user, refresh]
   );
+
+  const clearSyncError = useCallback(() => setSyncError(null), []);
 
   return {
     cards,
     dueCards,
     totalCount,
     loading: loading || authLoading,
+    syncError,
+    clearSyncError,
     addCard,
     removeCard,
     hasCard,
