@@ -184,7 +184,7 @@ function renderNode(
       return (
         <blockquote
           key={index}
-          className="border-l-4 border-gray-300 pl-4 italic dark:border-gray-600"
+          className="border-l-4 border-border-input pl-4 italic"
         >
           {children}
         </blockquote>

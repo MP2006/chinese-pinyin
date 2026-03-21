@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { getUsageStats, clearUsageStats, type UsageStats } from "@/lib/apiUsage";
+
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 const ENDPOINTS = [
   { key: "/api/translate", label: "Translate", unit: "characters" },
@@ -40,12 +44,24 @@ function formatDate(iso: string): string {
 }
 
 export default function UsagePage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  const isAdmin = ADMIN_EMAIL && user?.email === ADMIN_EMAIL;
+
   useEffect(() => {
-    setStats(getUsageStats());
-  }, []);
+    if (!authLoading && !isAdmin) {
+      router.replace("/");
+    }
+  }, [authLoading, isAdmin, router]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      setStats(getUsageStats());
+    }
+  }, [isAdmin]);
 
   function handleClear() {
     clearUsageStats();
@@ -53,20 +69,20 @@ export default function UsagePage() {
     setConfirmClear(false);
   }
 
-  if (!stats) return null;
+  if (authLoading || !isAdmin || !stats) return null;
 
   const last7 = getLast7Days();
   const totalChars = Object.values(stats.totals).reduce((s, e) => s + e.chars, 0);
 
   return (
-    <main className="min-h-screen bg-white pt-14 transition-colors md:pt-0 dark:bg-gray-900">
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <main className="min-h-screen bg-surface-page pt-14 transition-colors md:pt-0">
+      <div className="mx-auto max-w-4xl px-6 py-16 sm:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-text-heading">
             API Usage
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm text-text-secondary">
             Track API calls to estimate costs for paid services
           </p>
         </div>
@@ -78,18 +94,18 @@ export default function UsagePage() {
             return (
               <div
                 key={ep.key}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+                className="rounded-xl border border-border bg-surface-card p-6"
               >
-                <div className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <div className="text-xs font-medium uppercase tracking-wider text-text-muted">
                   {ep.label}
                 </div>
-                <div className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                <div className="mt-2 text-2xl font-semibold text-text-heading">
                   {data ? formatNumber(data.calls) : 0}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-text-secondary">
                   call{(!data || data.calls !== 1) ? "s" : ""}
                 </div>
-                <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                <div className="mt-1 text-sm text-text-body">
                   {data ? formatNumber(data.chars) : 0} {ep.unit}
                 </div>
               </div>
@@ -98,21 +114,21 @@ export default function UsagePage() {
         </div>
 
         {/* Daily breakdown — last 7 days */}
-        <div className="mt-10">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="mt-12">
+          <h2 className="mb-4 text-lg font-semibold text-text-heading">
             Last 7 Days
           </h2>
-          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/80">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-border bg-gray-50 dark:bg-gray-800/80">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-secondary">
                     Date
                   </th>
                   {ENDPOINTS.map((ep) => (
                     <th
                       key={ep.key}
-                      className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                      className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-text-secondary"
                     >
                       {ep.label}
                     </th>
@@ -127,7 +143,7 @@ export default function UsagePage() {
                       key={date}
                       className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                     >
-                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-2.5 text-text-label">
                         {formatDate(date)}
                       </td>
                       {ENDPOINTS.map((ep) => {
@@ -135,12 +151,12 @@ export default function UsagePage() {
                         return (
                           <td
                             key={ep.key}
-                            className="px-4 py-2.5 text-right tabular-nums text-gray-600 dark:text-gray-400"
+                            className="px-4 py-2.5 text-right tabular-nums text-text-body"
                           >
                             {epData ? (
                               <span>
                                 {epData.calls} call{epData.calls !== 1 ? "s" : ""}
-                                <span className="ml-1 text-gray-400 dark:text-gray-500">
+                                <span className="ml-1 text-text-muted">
                                   ({formatNumber(epData.chars)})
                                 </span>
                               </span>
@@ -159,11 +175,11 @@ export default function UsagePage() {
         </div>
 
         {/* Cost estimator */}
-        <div className="mt-10">
-          <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="mt-12">
+          <h2 className="mb-2 text-lg font-semibold text-text-heading">
             Cost Estimator
           </h2>
-          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mb-4 text-sm text-text-secondary">
             Estimated costs based on your actual usage per endpoint
           </p>
           <div className="space-y-3">
@@ -173,17 +189,17 @@ export default function UsagePage() {
               return (
                 <div
                   key={est.name}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800"
+                  className="flex items-center justify-between rounded-xl border border-border bg-surface-card px-4 py-3"
                 >
                   <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <div className="text-sm font-medium text-text-heading">
                       {est.name}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-text-secondary">
                       ${est.rate}/{est.per}
                     </div>
                   </div>
-                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <div className="text-lg font-semibold text-text-heading">
                     ${cost.toFixed(4)}
                   </div>
                 </div>
@@ -193,21 +209,21 @@ export default function UsagePage() {
         </div>
 
         {/* Clear data */}
-        <div className="mt-10 flex items-center justify-end gap-3">
+        <div className="mt-12 flex items-center justify-end gap-3">
           {confirmClear ? (
             <>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-text-secondary">
                 Clear all usage data?
               </span>
               <button
                 onClick={handleClear}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
               >
                 Confirm
               </button>
               <button
                 onClick={() => setConfirmClear(false)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                className="rounded-lg border border-border-input px-4 py-2 text-sm font-medium text-text-label transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 Cancel
               </button>
@@ -215,7 +231,7 @@ export default function UsagePage() {
           ) : (
             <button
               onClick={() => setConfirmClear(true)}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              className="rounded-lg border border-border-input px-4 py-2 text-sm font-medium text-text-label transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Clear usage data
             </button>

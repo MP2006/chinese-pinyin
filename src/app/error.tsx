@@ -15,15 +15,15 @@ export default function GlobalError({
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="text-xl font-semibold text-text-heading">
         Something went wrong
       </h2>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-2 text-sm text-text-secondary">
         An unexpected error occurred. Please try again.
       </p>
       <button
         onClick={reset}
-        className="mt-6 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
+        className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
       >
         Try again
       </button>

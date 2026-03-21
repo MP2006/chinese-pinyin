@@ -32,33 +32,7 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => mockSupabase,
 }));
 
-// Mock flashcardStore (localStorage functions)
-vi.mock("@/lib/flashcardStore", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/flashcardStore")>();
-  return {
-    ...actual,
-    getFlashcards: vi.fn(() => []),
-    addFlashcard: vi.fn(
-      (word: string, pinyin: string, definitions: Record<string, string>) => ({
-        id: "local-id",
-        word,
-        pinyin,
-        definitions,
-        createdAt: "2024-06-15T00:00:00Z",
-        nextReview: "2024-06-15",
-        interval: 0,
-        easeFactor: 2.5,
-        reviewCount: 0,
-      })
-    ),
-    removeFlashcard: vi.fn(),
-    hasFlashcard: vi.fn(() => false),
-    reviewCard: vi.fn(),
-  };
-});
-
 import { useFlashcards } from "../useFlashcards";
-import * as store from "@/lib/flashcardStore";
 
 function resetChainMocks() {
   mockChain.select.mockClear().mockReturnThis();
@@ -75,7 +49,6 @@ describe("useFlashcards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetChainMocks();
-    localStorage.clear();
   });
 
   describe("logged-out path", () => {
@@ -83,64 +56,26 @@ describe("useFlashcards", () => {
       mockUseAuth.mockReturnValue({ user: null, loading: false });
     });
 
-    it("loads cards from localStorage", () => {
-      vi.mocked(store.getFlashcards).mockReturnValue([]);
+    it("returns empty cards when not logged in", () => {
       const { result } = renderHook(() => useFlashcards());
       expect(result.current.cards).toEqual([]);
       expect(result.current.loading).toBe(false);
     });
 
-    it("addCard delegates to localStorage", async () => {
-      vi.mocked(store.getFlashcards).mockReturnValue([]);
+    it("hasCard returns false when not logged in", () => {
+      const { result } = renderHook(() => useFlashcards());
+      expect(result.current.hasCard("你好")).toBe(false);
+    });
+
+    it("addCard is a no-op when not logged in", async () => {
       const { result } = renderHook(() => useFlashcards());
 
       await act(async () => {
         await result.current.addCard("你好", "nǐ hǎo", { en: "hello" });
       });
 
-      expect(store.addFlashcard).toHaveBeenCalledWith("你好", "nǐ hǎo", {
-        en: "hello",
-      });
-    });
-
-    it("removeCard delegates to localStorage", async () => {
-      const card = {
-        id: "test-id",
-        word: "你好",
-        pinyin: "nǐ hǎo",
-        definitions: { en: "hello" },
-        createdAt: "2024-06-15T00:00:00Z",
-        nextReview: "2024-06-15",
-        interval: 0,
-        easeFactor: 2.5,
-        reviewCount: 0,
-      };
-      vi.mocked(store.getFlashcards).mockReturnValue([card]);
-
-      const { result } = renderHook(() => useFlashcards());
-
-      await act(async () => {
-        await result.current.removeCard("test-id");
-      });
-
-      expect(store.removeFlashcard).toHaveBeenCalledWith("test-id");
-    });
-
-    it("hasCard delegates to localStorage", () => {
-      vi.mocked(store.hasFlashcard).mockReturnValue(true);
-      const { result } = renderHook(() => useFlashcards());
-      expect(result.current.hasCard("你好")).toBe(true);
-    });
-
-    it("reviewCard delegates to localStorage", async () => {
-      vi.mocked(store.getFlashcards).mockReturnValue([]);
-      const { result } = renderHook(() => useFlashcards());
-
-      await act(async () => {
-        await result.current.reviewCard("id", "good");
-      });
-
-      expect(store.reviewCard).toHaveBeenCalledWith("id", "good");
+      expect(result.current.cards).toEqual([]);
+      expect(mockSupabase.from).not.toHaveBeenCalled();
     });
   });
 
@@ -149,7 +84,6 @@ describe("useFlashcards", () => {
 
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: fakeUser, loading: false });
-      localStorage.setItem("flashcards_migrated", "1");
     });
 
     it("fetches cards from Supabase on mount", async () => {
@@ -341,7 +275,6 @@ describe("useFlashcards", () => {
 
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: fakeUser, loading: false });
-      localStorage.setItem("flashcards_migrated", "1");
     });
 
     it("sets syncError when addCard insert fails", async () => {
@@ -358,7 +291,7 @@ describe("useFlashcards", () => {
         await result.current.addCard("世界", "shì jiè", { en: "world" });
       });
 
-      expect(result.current.syncError).toBe("Failed to save card. Please try again.");
+      expect(result.current.syncError).toBe("Failed to save card: insert failed");
     });
 
     it("reverts optimistic update on sync failure", async () => {
@@ -394,7 +327,7 @@ describe("useFlashcards", () => {
 
       // After refresh, cards should be restored from the server data
       await waitFor(() => {
-        expect(result.current.syncError).toBe("Failed to delete card. Please try again.");
+        expect(result.current.syncError).toBe("Failed to delete card: delete failed");
       });
     });
 
@@ -423,107 +356,47 @@ describe("useFlashcards", () => {
   });
 
   describe("dueCards", () => {
-    it("filters to only cards due today or earlier", () => {
-      mockUseAuth.mockReturnValue({ user: null, loading: false });
+    it("filters to only cards due today or earlier", async () => {
+      const fakeUser = { id: "user-123" };
+      mockUseAuth.mockReturnValue({ user: fakeUser, loading: false });
       const today = new Date().toISOString().slice(0, 10);
 
-      vi.mocked(store.getFlashcards).mockReturnValue([
+      const dbRows = [
         {
-          id: "1",
+          id: "sb-1",
+          user_id: "user-123",
           word: "你",
           pinyin: "nǐ",
           definitions: { en: "you" },
-          createdAt: "2024-01-01",
-          nextReview: today,
+          created_at: "2024-01-01T00:00:00Z",
+          next_review: today,
           interval: 0,
-          easeFactor: 2.5,
-          reviewCount: 0,
+          ease_factor: 2.5,
+          review_count: 0,
         },
         {
-          id: "2",
+          id: "sb-2",
+          user_id: "user-123",
           word: "好",
           pinyin: "hǎo",
           definitions: { en: "good" },
-          createdAt: "2024-01-01",
-          nextReview: "2099-12-31",
+          created_at: "2024-01-01T00:00:00Z",
+          next_review: "2099-12-31",
           interval: 10,
-          easeFactor: 2.5,
-          reviewCount: 5,
+          ease_factor: 2.5,
+          review_count: 5,
         },
-      ]);
+      ];
+      mockChain.order.mockResolvedValue({ data: dbRows, error: null });
 
       const { result } = renderHook(() => useFlashcards());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       expect(result.current.dueCards).toHaveLength(1);
       expect(result.current.dueCards[0].word).toBe("你");
-    });
-  });
-
-  describe("migration", () => {
-    it("uploads local cards to Supabase on first login", async () => {
-      mockUseAuth.mockReturnValue({
-        user: { id: "user-123" },
-        loading: false,
-      });
-      localStorage.removeItem("flashcards_migrated");
-
-      vi.mocked(store.getFlashcards).mockReturnValue([
-        {
-          id: "local-1",
-          word: "你好",
-          pinyin: "nǐ hǎo",
-          definitions: { en: "hello" },
-          createdAt: "2024-06-15T00:00:00Z",
-          nextReview: "2024-06-15",
-          interval: 0,
-          easeFactor: 2.5,
-          reviewCount: 0,
-        },
-      ]);
-
-      mockChain.order.mockResolvedValue({ data: [], error: null });
-      mockChain.upsert.mockResolvedValue({ error: null });
-
-      renderHook(() => useFlashcards());
-
-      await waitFor(() => {
-        expect(mockChain.upsert).toHaveBeenCalled();
-      });
-    });
-
-    it("skips migration if already migrated", async () => {
-      mockUseAuth.mockReturnValue({
-        user: { id: "user-123" },
-        loading: false,
-      });
-      localStorage.setItem("flashcards_migrated", "1");
-      mockChain.order.mockResolvedValue({ data: [], error: null });
-
-      renderHook(() => useFlashcards());
-
-      await waitFor(() => {
-        expect(mockSupabase.from).toHaveBeenCalled();
-      });
-
-      expect(mockChain.upsert).not.toHaveBeenCalled();
-    });
-
-    it("skips migration if no local cards", async () => {
-      mockUseAuth.mockReturnValue({
-        user: { id: "user-123" },
-        loading: false,
-      });
-      localStorage.removeItem("flashcards_migrated");
-      vi.mocked(store.getFlashcards).mockReturnValue([]);
-      mockChain.order.mockResolvedValue({ data: [], error: null });
-
-      renderHook(() => useFlashcards());
-
-      await waitFor(() => {
-        expect(mockSupabase.from).toHaveBeenCalled();
-      });
-
-      expect(mockChain.upsert).not.toHaveBeenCalled();
-      expect(localStorage.getItem("flashcards_migrated")).toBe("1");
     });
   });
 });

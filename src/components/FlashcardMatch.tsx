@@ -109,13 +109,13 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <CheckCircleIcon className="mb-4 h-12 w-12 text-green-400" />
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">All matched!</h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <h2 className="text-lg font-semibold text-text-heading">All matched!</h2>
+        <p className="mt-2 text-sm text-text-secondary">
           Time: {formatTime(elapsed)}
         </p>
         <button
           onClick={playAgain}
-          className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
         >
           Play Again
         </button>
@@ -127,13 +127,13 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
     <div>
       {/* Timer */}
       <div className="mb-6 text-center">
-        <span className="font-mono text-lg text-gray-600 dark:text-gray-400">
+        <span className="font-mono text-lg text-text-body">
           {formatTime(elapsed)}
         </span>
       </div>
 
       {/* Tile grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
         {tiles.map((tile) => {
           const isMatched = matched.has(tile.id);
           const isSelected = selected === tile.id;
@@ -144,21 +144,21 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
               key={tile.id}
               onClick={() => handleTileClick(tile)}
               disabled={isMatched}
-              className={`flex h-24 items-center justify-center rounded-xl border p-3 text-center transition-all duration-200 ${
+              className={`flex h-28 items-center justify-center rounded-xl border p-4 text-center transition-all duration-200 ${
                 isMatched
                   ? "scale-90 border-green-300 bg-green-50 opacity-40 dark:border-green-700 dark:bg-green-900/20"
                   : isSelected
-                    ? "border-teal-600 bg-teal-50 shadow-md dark:border-teal-400 dark:bg-teal-900/20"
+                    ? "border-primary bg-primary-soft shadow-md"
                     : isShaking
-                      ? "animate-shake border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
-                      : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+                      ? "animate-shake border-red-300 bg-primary-soft dark:border-red-700"
+                      : "border-border bg-surface-card hover:border-gray-300 hover:shadow-sm dark:hover:border-gray-600"
               }`}
             >
               <span
                 className={`text-sm font-medium ${
                   isMatched
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-gray-900 dark:text-gray-100"
+                    ? "text-success"
+                    : "text-text-heading"
                 } ${tile.type === "word" ? "text-lg" : ""}`}
               >
                 {tile.text}

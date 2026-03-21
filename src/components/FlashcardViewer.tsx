@@ -26,7 +26,7 @@ const RATINGS: { rating: ReviewRating; label: string; key: string; color: string
   { rating: "again", label: "Again", key: "1", color: "bg-red-500 hover:bg-red-600" },
   { rating: "hard", label: "Hard", key: "2", color: "bg-orange-500 hover:bg-orange-600" },
   { rating: "good", label: "Good", key: "3", color: "bg-green-500 hover:bg-green-600" },
-  { rating: "easy", label: "Easy", key: "4", color: "bg-teal-500 hover:bg-teal-600" },
+  { rating: "easy", label: "Easy", key: "4", color: "bg-red-500 hover:bg-red-600" },
 ];
 
 interface FlashcardViewerProps {
@@ -73,7 +73,7 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
         onClick={handleFlip}
       >
         <div
-          className="relative h-72 w-full transition-transform duration-500"
+          className="relative h-80 w-full transition-transform duration-500"
           style={{
             transformStyle: "preserve-3d",
             transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
@@ -81,37 +81,37 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
         >
           {/* Front */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-border bg-surface-card p-6"
             style={{ backfaceVisibility: "hidden" }}
           >
             <SpeakerButton speaking={speaking} onClick={(e) => { e.stopPropagation(); speak(card.word); }} />
-            <span className="text-5xl font-bold text-gray-900 dark:text-gray-100">
+            <span className="text-5xl font-bold text-text-heading">
               {card.word}
             </span>
-            <span className="mt-6 text-sm text-gray-400 dark:text-gray-500">
+            <span className="mt-6 text-sm text-text-muted">
               Click or press Space to reveal
             </span>
           </div>
 
           {/* Back */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-border bg-surface-card p-6"
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
             <SpeakerButton speaking={speaking} onClick={(e) => { e.stopPropagation(); speak(card.word); }} />
-            <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+            <span className="text-4xl font-bold text-text-heading">
               {card.word}
             </span>
-            <span className="mt-2 text-lg text-gray-500 dark:text-gray-400">
+            <span className="mt-2 text-lg text-text-secondary">
               {card.pinyin}
             </span>
             <div className="mt-4 w-full space-y-2 text-center">
               {Object.entries(card.definitions).map(([lang, def]) => (
                 <div key={lang}>
-                  <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
                     {lang === "en" ? "English" : lang === "vi" ? "Tiếng Việt" : lang}
                   </span>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{def}</p>
+                  <p className="text-sm text-text-label">{def}</p>
                 </div>
               ))}
             </div>
@@ -126,7 +126,7 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
             <button
               key={r.rating}
               onClick={() => onReview(card.id, r.rating)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${r.color}`}
+              className={`rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-colors ${r.color}`}
             >
               {r.label}
               <span className="ml-1.5 text-xs opacity-70">({r.key})</span>

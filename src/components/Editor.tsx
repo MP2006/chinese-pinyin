@@ -36,8 +36,8 @@ function ToolbarButton({
       }}
       className={`rounded px-2 py-1 text-sm font-medium transition-colors ${
         active
-          ? "bg-teal-600 text-white dark:bg-teal-500"
-          : "text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          ? "bg-primary text-white"
+          : "text-text-muted hover:bg-surface-hover hover:text-gray-700 dark:hover:text-gray-200"
       }`}
     >
       {children}
@@ -88,7 +88,7 @@ export default function Editor({ onUpdate }: EditorProps) {
     editorProps: {
       attributes: {
         class:
-          "tiptap min-h-[120px] px-4 py-3 text-lg text-gray-900 dark:text-gray-100 outline-none",
+          "tiptap min-h-[160px] px-4 py-3 text-lg text-text-heading outline-none",
       },
     },
     onUpdate: ({ editor }) => {
@@ -267,10 +267,10 @@ export default function Editor({ onUpdate }: EditorProps) {
   return (
     <div>
       <div
-        className={`overflow-hidden rounded-lg border bg-white transition-colors focus-within:ring-2 focus-within:ring-teal-500/30 dark:bg-gray-800 ${
+        className={`overflow-hidden rounded-lg border bg-surface-card transition-colors focus-within:border-primary-text ${
           dragging
-            ? "border-teal-500 ring-2 ring-teal-500/30 dark:border-teal-400"
-            : "border-gray-200 dark:border-gray-700"
+            ? "border-red-500 ring-2 ring-red-500/30 dark:border-red-400"
+            : "border-border"
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -278,7 +278,7 @@ export default function Editor({ onUpdate }: EditorProps) {
         onDrop={handleDrop}
       >
         {/* Toolbar */}
-        <div className="flex flex-wrap gap-1 border-b border-gray-200 px-2 py-1.5 dark:border-gray-700">
+        <div className="flex flex-wrap gap-1 border-b border-border px-2 py-2">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -298,7 +298,7 @@ export default function Editor({ onUpdate }: EditorProps) {
             S
           </ToolbarButton>
 
-          <div className="mx-1 w-px bg-gray-200/60 dark:bg-gray-700/60" />
+          <div className="mx-1 w-px bg-border" />
 
           <ToolbarButton
             onClick={() =>
@@ -329,7 +329,7 @@ export default function Editor({ onUpdate }: EditorProps) {
 
           {showMicButton && (
             <>
-              <div className="mx-1 w-px bg-gray-200/60 dark:bg-gray-700/60" />
+              <div className="mx-1 w-px bg-border" />
               <button
                 type="button"
                 onMouseDown={(e) => {
@@ -338,8 +338,8 @@ export default function Editor({ onUpdate }: EditorProps) {
                 }}
                 className={`flex items-center gap-1 rounded px-2 py-1 text-sm font-medium transition-colors ${
                   listening
-                    ? "bg-red-600 text-white dark:bg-red-500"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    ? "bg-primary text-white"
+                    : "text-text-body hover:bg-surface-hover"
                 }`}
                 aria-label={
                   listening ? "Stop voice input" : "Start voice input"
@@ -369,7 +369,7 @@ export default function Editor({ onUpdate }: EditorProps) {
 
           {showPasteButton && (
             <>
-              <div className="mx-1 w-px bg-gray-200/60 dark:bg-gray-700/60" />
+              <div className="mx-1 w-px bg-border" />
               <button
                 type="button"
                 disabled={ocrBusy}
@@ -379,8 +379,8 @@ export default function Editor({ onUpdate }: EditorProps) {
                 }}
                 className={`flex items-center gap-1 rounded px-2 py-1 text-sm font-medium transition-colors ${
                   ocrBusy
-                    ? "bg-teal-600 text-white dark:bg-teal-500"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    ? "bg-primary text-white"
+                    : "text-text-body hover:bg-surface-hover"
                 } disabled:opacity-70`}
                 aria-label="Paste image from clipboard for OCR"
               >
@@ -404,8 +404,8 @@ export default function Editor({ onUpdate }: EditorProps) {
         <div className="relative">
           <EditorContent editor={editor} />
           {dragging && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-teal-50/80 dark:bg-teal-900/30">
-              <div className="flex items-center gap-2 rounded-lg border-2 border-dashed border-teal-500 bg-white/90 px-4 py-2 text-sm font-medium text-teal-700 dark:bg-gray-800/90 dark:text-teal-300">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-red-50/80 dark:bg-red-900/30">
+              <div className="flex items-center gap-2 rounded-lg border-2 border-dashed border-red-500 bg-white/90 px-4 py-2 text-sm font-medium text-red-700 dark:bg-gray-800/90 dark:text-red-300">
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -418,11 +418,11 @@ export default function Editor({ onUpdate }: EditorProps) {
 
       {/* OCR Preview Panel — full image with overlay highlights */}
       {showPanel && (
-        <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        <div className="mt-4 overflow-hidden rounded-lg border border-border bg-surface-card">
           {/* Header bar */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
                 Screenshot OCR
               </span>
               {ocrPreview && ocrPreview.lines.length > 0 && (
@@ -437,7 +437,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                   type="button"
                   onClick={insertAll}
                   disabled={insertedLines.size === ocrPreview.lines.length}
-                  className="text-xs font-medium text-teal-600 hover:text-teal-700 disabled:opacity-40 dark:text-teal-400 dark:hover:text-teal-300"
+                  className="text-xs font-medium text-primary-text hover:text-red-700 disabled:opacity-40 dark:hover:text-red-300"
                 >
                   Insert all
                 </button>
@@ -466,8 +466,8 @@ export default function Editor({ onUpdate }: EditorProps) {
                     className="w-full rounded border border-gray-200 opacity-60 dark:border-gray-600"
                   />
                 )}
-                <div className="flex items-center gap-2 text-sm text-teal-700 dark:text-teal-300">
-                  <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
+                <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+                  <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-red-600 dark:border-gray-600 dark:border-t-red-400" />
                   {ocrStatus === "loading-engine"
                     ? "Downloading Chinese OCR data..."
                     : "Reading text from image..."}
@@ -477,7 +477,7 @@ export default function Editor({ onUpdate }: EditorProps) {
 
             {/* Error state */}
             {ocrError && !ocrBusy && (
-              <p className="py-2 text-center text-sm text-red-600 dark:text-red-400">
+              <p className="py-2 text-center text-sm text-primary-text">
                 {ocrError}
               </p>
             )}
@@ -506,8 +506,8 @@ export default function Editor({ onUpdate }: EditorProps) {
                       title={line.text}
                       className={`absolute rounded-sm transition-colors ${
                         inserted
-                          ? "bg-teal-500/30 ring-1 ring-teal-500/60"
-                          : "bg-teal-500/15 hover:bg-teal-500/40 ring-1 ring-transparent hover:ring-teal-500/60"
+                          ? "bg-red-500/30 ring-1 ring-red-500/60"
+                          : "bg-red-500/15 hover:bg-red-500/40 ring-1 ring-transparent hover:ring-red-500/60"
                       }`}
                       style={{
                         left: `${(bbox.x0 / imgW) * 100}%`,
@@ -517,7 +517,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                       }}
                     >
                       {inserted && (
-                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-white shadow-sm">
+                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white shadow-sm">
                           <CheckIcon className="h-2.5 w-2.5" />
                         </span>
                       )}

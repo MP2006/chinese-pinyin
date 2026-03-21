@@ -5,17 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { mapDbToFlashcard, type FlashcardRow } from "@/lib/supabase/types";
 import {
-  getFlashcards,
-  addFlashcard as localAdd,
-  removeFlashcard as localRemove,
-  hasFlashcard as localHas,
-  reviewCard as localReview,
   computeSM2,
   type Flashcard,
   type ReviewRating,
 } from "@/lib/flashcardStore";
-
-const MIGRATED_KEY = "flashcards_migrated";
 
 import { todayStr } from "@/lib/dateUtils";
 
@@ -36,7 +29,7 @@ export function useFlashcards() {
     if (authLoading) return;
 
     if (!user) {
-      setCards(getFlashcards());
+      setCards([]);
       setLoading(false);
       return;
     }
@@ -53,42 +46,6 @@ export function useFlashcards() {
     }
     setLoading(false);
   }, [user, authLoading]);
-
-  // --- Migrate localStorage → Supabase on first login ---
-  useEffect(() => {
-    if (authLoading || !user) return;
-    if (localStorage.getItem(MIGRATED_KEY)) return;
-
-    const localCards = getFlashcards();
-    if (localCards.length === 0) {
-      localStorage.setItem(MIGRATED_KEY, "1");
-      return;
-    }
-
-    const rows = localCards.map((c) => ({
-      user_id: user.id,
-      word: c.word,
-      pinyin: c.pinyin,
-      definitions: c.definitions,
-      created_at: c.createdAt,
-      next_review: c.nextReview,
-      interval: c.interval,
-      ease_factor: c.easeFactor,
-      review_count: c.reviewCount,
-    }));
-
-    supabase
-      .from("flashcards")
-      .upsert(rows, { onConflict: "user_id,word" })
-      .then(({ error }) => {
-        if (!error) {
-          localStorage.setItem(MIGRATED_KEY, "1");
-          refresh(); // One-time full fetch after migration
-        } else {
-          setSyncError("Migration failed — local cards were not synced.");
-        }
-      });
-  }, [user, authLoading, refresh]);
 
   // --- Initial load ---
   useEffect(() => {
@@ -109,11 +66,7 @@ export function useFlashcards() {
 
   const addCard = useCallback(
     async (word: string, pinyin: string, definitions: Record<string, string>) => {
-      if (!user) {
-        localAdd(word, pinyin, definitions);
-        setCards(getFlashcards());
-        return;
-      }
+      if (!user) return;
 
       setSyncError(null);
 
@@ -135,14 +88,15 @@ export function useFlashcards() {
           .eq("id", existing.id)
           .eq("user_id", user.id);
         if (error) {
-          setSyncError("Failed to save card. Please try again.");
+          setSyncError(`Failed to save card: ${error.message}`);
           refresh();
         }
       } else {
+        const newId = crypto.randomUUID();
         // Optimistic update
         setCards((prev) => [
           {
-            id: crypto.randomUUID(),
+            id: newId,
             word,
             pinyin,
             definitions,
@@ -156,13 +110,14 @@ export function useFlashcards() {
         ]);
         // Background sync
         const { error } = await supabase.from("flashcards").insert({
+          id: newId,
           user_id: user.id,
           word,
           pinyin,
           definitions,
         });
         if (error) {
-          setSyncError("Failed to save card. Please try again.");
+          setSyncError(`Failed to save card: ${error.message}`);
           refresh();
         }
       }
@@ -172,11 +127,7 @@ export function useFlashcards() {
 
   const removeCard = useCallback(
     async (id: string) => {
-      if (!user) {
-        localRemove(id);
-        setCards(getFlashcards());
-        return;
-      }
+      if (!user) return;
 
       setSyncError(null);
 
@@ -186,7 +137,7 @@ export function useFlashcards() {
       // Background sync
       const { error } = await supabase.from("flashcards").delete().eq("id", id).eq("user_id", user.id);
       if (error) {
-        setSyncError("Failed to delete card. Please try again.");
+        setSyncError(`Failed to delete card: ${error.message}`);
         refresh();
       }
     },
@@ -195,7 +146,7 @@ export function useFlashcards() {
 
   const hasCard = useCallback(
     (word: string): boolean => {
-      if (!user) return localHas(word);
+      if (!user) return false;
       return cards.some((c) => c.word === word);
     },
     [user, cards]
@@ -203,11 +154,7 @@ export function useFlashcards() {
 
   const reviewCardAction = useCallback(
     async (id: string, rating: ReviewRating) => {
-      if (!user) {
-        localReview(id, rating);
-        setCards(getFlashcards());
-        return;
-      }
+      if (!user) return;
 
       setSyncError(null);
 
@@ -244,7 +191,7 @@ export function useFlashcards() {
         .eq("id", id)
         .eq("user_id", user.id);
       if (error) {
-        setSyncError("Failed to save review. Please try again.");
+        setSyncError(`Failed to save review: ${error.message}`);
         refresh();
       }
     },

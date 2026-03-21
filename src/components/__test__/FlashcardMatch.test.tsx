@@ -71,7 +71,7 @@ describe("FlashcardMatch", () => {
     const wordTile = screen.getByText("你好").closest("button")!;
     fireEvent.click(wordTile);
 
-    expect(wordTile.className).toContain("border-teal-600");
+    expect(wordTile.className).toContain("border-primary");
   });
 
   it("clicking same tile deselects it", () => {
@@ -79,10 +79,10 @@ describe("FlashcardMatch", () => {
 
     const wordTile = screen.getByText("你好").closest("button")!;
     fireEvent.click(wordTile);
-    expect(wordTile.className).toContain("border-teal-600");
+    expect(wordTile.className).toContain("border-primary");
 
     fireEvent.click(wordTile);
-    expect(wordTile.className).not.toContain("border-teal-600");
+    expect(wordTile.className).not.toContain("border-primary");
   });
 
   it("correct match applies matched styling", () => {
@@ -128,7 +128,7 @@ describe("FlashcardMatch", () => {
     // During shake, clicking should be ignored
     const anotherTile = screen.getByText("学习").closest("button")!;
     fireEvent.click(anotherTile);
-    expect(anotherTile.className).not.toContain("border-teal-600");
+    expect(anotherTile.className).not.toContain("border-primary");
 
     // After 500ms shake ends
     act(() => {
@@ -137,7 +137,7 @@ describe("FlashcardMatch", () => {
 
     // Now clicking should work
     fireEvent.click(anotherTile);
-    expect(anotherTile.className).toContain("border-teal-600");
+    expect(anotherTile.className).toContain("border-primary");
 
     vi.useRealTimers();
   });

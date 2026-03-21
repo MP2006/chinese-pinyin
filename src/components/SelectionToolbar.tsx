@@ -49,7 +49,7 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
       const containerRect = containerRef.current.getBoundingClientRect();
       const rangeRect = range.getBoundingClientRect();
 
-      const toolbarWidth = supportsSpeechRecognition ? 62 : 28;
+      const toolbarWidth = supportsSpeechRecognition ? 200 : 100;
 
       setSelectedText(text);
       setPosition({
@@ -88,13 +88,13 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
   return (
     <div
       data-selection-toolbar
-      className="absolute z-20 flex items-center gap-1 rounded-full bg-gray-900 p-0.5 shadow-lg dark:bg-gray-200"
+      className="absolute z-20 flex items-center gap-1 rounded-lg bg-gray-900 px-1 py-1 shadow-lg dark:bg-gray-200"
       style={{ top: position.top, left: position.left }}
     >
-      {/* Speaker button */}
+      {/* Listen button */}
       <button
         data-selection-toolbar
-        className="flex h-7 w-7 items-center justify-center rounded-full text-white transition-transform hover:scale-110 active:scale-95 dark:text-gray-900"
+        className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-700 active:bg-gray-600 disabled:opacity-50 dark:text-gray-900 dark:hover:bg-gray-300 dark:active:bg-gray-400"
         onClick={() => speak(selectedText)}
         disabled={speaking}
         aria-label="Speak selected text"
@@ -102,11 +102,12 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
         {speaking ? (
           <SpeakerWaveIcon className="h-3.5 w-3.5 animate-pulse" />
         ) : (
-          <SpeakerIcon />
+          <SpeakerIcon className="h-3.5 w-3.5" />
         )}
+        Listen
       </button>
 
-      {/* Mic button (only if browser supports SpeechRecognition) */}
+      {/* Practice button (only if browser supports SpeechRecognition) */}
       {supportsSpeechRecognition && (
         <SpeechPractice
           expectedText={selectedText}

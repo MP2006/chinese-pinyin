@@ -79,14 +79,14 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <CheckCircleIcon className="mb-4 h-12 w-12 text-green-400" />
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Session complete!</h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <h2 className="text-lg font-semibold text-text-heading">Session complete!</h2>
+        <p className="mt-2 text-sm text-text-secondary">
           {correctCount} of {shuffled.length} correct
         </p>
         {missed.length > 0 && (
           <button
             onClick={retryMissed}
-            className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
+            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
           >
             Retry missed ({missed.length})
           </button>
@@ -103,28 +103,28 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
     <div className="mx-auto max-w-md">
       {/* Progress */}
       <div className="mb-6">
-        <div className="mb-1.5 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+        <div className="mb-1.5 flex items-center justify-between text-sm text-text-secondary">
           <span>{index + 1} of {shuffled.length}</span>
           <span>{correctCount} correct</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div
-            className="h-full rounded-full bg-teal-600 transition-all duration-300 dark:bg-teal-400"
+            className="h-full rounded-full bg-primary transition-all duration-300"
             style={{ width: `${(index / shuffled.length) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Prompt card */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">{card.pinyin}</p>
+      <div className="mb-6 rounded-xl border border-border bg-surface-card p-7">
+        <p className="mb-1 text-sm text-text-secondary">{card.pinyin}</p>
         <div className="space-y-1">
           {Object.entries(card.definitions).map(([lang, def]) => (
             <div key={lang}>
-              <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
                 {lang === "en" ? "English" : lang === "vi" ? "Tiếng Việt" : lang}
               </span>
-              <p className="text-sm text-gray-700 dark:text-gray-300">{def}</p>
+              <p className="text-sm text-text-label">{def}</p>
             </div>
           ))}
         </div>
@@ -150,21 +150,21 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
               ? "border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-300"
               : result === "incorrect"
                 ? "border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/20 dark:text-red-300"
-                : "border-gray-200 bg-white text-gray-900 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-teal-500"
+                : "border-border bg-surface-card text-text-heading focus:border-primary-text"
           }`}
         />
         {result === null ? (
           <button
             onClick={handleSubmit}
             disabled={!input.trim()}
-            className="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-40 dark:bg-teal-500 dark:hover:bg-teal-600"
+            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             Check
           </button>
         ) : result === "incorrect" ? (
           <button
             onClick={advance}
-            className="rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600"
+            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
           >
             Continue
           </button>
@@ -174,8 +174,8 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
       {/* Answer feedback */}
       {result === "incorrect" && (
         <div className="mt-3 flex items-center gap-2">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Correct answer: <span className="font-medium text-gray-900 dark:text-gray-100">{card.word}</span>
+          <p className="text-sm text-text-secondary">
+            Correct answer: <span className="font-medium text-text-heading">{card.word}</span>
           </p>
           <button
             onClick={() => speak(card.word)}

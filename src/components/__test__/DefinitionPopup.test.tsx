@@ -14,6 +14,7 @@ const defaultProps = {
   onClose: vi.fn(),
   onAddCard: vi.fn(),
   isSaved: false,
+  isLoggedIn: true,
 };
 
 describe("DefinitionPopup", () => {
@@ -51,15 +52,15 @@ describe("DefinitionPopup", () => {
     await user.click(saveButton);
 
     expect(onAddCard).toHaveBeenCalledWith("你好", "nǐ hǎo", { en: "hello" });
-    // After click, saved state changes to show checkmark
-    expect(screen.getByLabelText("Saved")).toBeInTheDocument();
+    // After click, saved state changes to show confirmation
+    expect(screen.getByLabelText("Saved to flashcards")).toBeInTheDocument();
   });
 
   it("shows checkmark when isSaved is true", () => {
     render(<DefinitionPopup {...defaultProps} isSaved={true} />);
 
-    expect(screen.getByLabelText("Saved")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Save to flashcards")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Saved to flashcards")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save to flashcards" })).not.toBeInTheDocument();
   });
 
   it("close button calls onClose", async () => {
@@ -108,6 +109,15 @@ describe("DefinitionPopup", () => {
     expect(
       screen.getByText("Enable a language to see definitions")
     ).toBeInTheDocument();
+  });
+
+  it("shows sign-in link when not logged in", () => {
+    render(<DefinitionPopup {...defaultProps} isLoggedIn={false} />);
+
+    const link = screen.getByText("Sign in to save");
+    expect(link).toBeInTheDocument();
+    expect(link.closest("a")).toHaveAttribute("href", "/login");
+    expect(screen.queryByLabelText("Save to flashcards")).not.toBeInTheDocument();
   });
 
   it("renders multi-line definitions as separate paragraphs", () => {

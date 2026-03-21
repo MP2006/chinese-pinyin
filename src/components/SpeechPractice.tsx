@@ -172,17 +172,17 @@ export default function SpeechPractice({
       <button
         data-selection-toolbar
         onClick={state === "listening" ? stopRecognition : startListening}
-        className={`flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95 ${
+        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
           state === "listening"
-            ? "bg-red-600 text-white dark:bg-red-500"
-            : "bg-gray-900 text-white dark:bg-gray-200 dark:text-gray-900"
+            ? "bg-primary text-white hover:bg-primary-hover"
+            : "text-white hover:bg-gray-700 active:bg-gray-600 dark:text-gray-900 dark:hover:bg-gray-300 dark:active:bg-gray-400"
         }`}
         aria-label={state === "listening" ? "Stop recording" : "Practice pronunciation"}
       >
         {state === "listening" ? (
-          <span className="relative flex h-3 w-3">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75 dark:bg-white" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-white dark:bg-white" />
+          <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
           </span>
         ) : (
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -190,6 +190,7 @@ export default function SpeechPractice({
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         )}
+        {state === "listening" ? "Stop" : "Practice"}
       </button>
 
       {/* Error toast */}
@@ -206,7 +207,7 @@ export default function SpeechPractice({
       {state === "results" && result && (
         <div
           ref={popupRef}
-          className="absolute z-40 w-72 rounded-lg border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-600 dark:bg-gray-800"
+          className="absolute z-40 w-80 rounded-lg border border-border bg-surface-card p-5 shadow-lg"
           style={popupStyle}
         >
           {/* Score */}
@@ -214,7 +215,7 @@ export default function SpeechPractice({
             <span className={`text-3xl font-bold ${scoreColor}`}>
               {result.accuracy}%
             </span>
-            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <div className="mt-0.5 text-xs text-text-secondary">
               Accuracy
             </div>
           </div>
@@ -247,9 +248,9 @@ export default function SpeechPractice({
           </div>
 
           {/* Recognized text */}
-          <div className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-3 text-xs text-text-secondary">
             <span className="font-medium">You said:</span>{" "}
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="text-text-label">
               {recognizedText || "(nothing detected)"}
             </span>
           </div>
@@ -258,13 +259,13 @@ export default function SpeechPractice({
           <div className="flex gap-2">
             <button
               onClick={handleTryAgain}
-              className="flex-1 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300"
+              className="flex-1 rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300"
             >
               Try Again
             </button>
             <button
               onClick={onPlayReference}
-              className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="flex-1 rounded-md border border-border-input px-3 py-2 text-xs font-medium text-text-label transition-colors hover:bg-gray-50 dark:hover:bg-surface-hover"
             >
               Hear Reference
             </button>

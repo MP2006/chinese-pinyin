@@ -38,7 +38,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <Sidebar />
-          <div className="md:ml-14">{children}</div>
+          <div className="md:ml-64">{children}</div>
         </AuthProvider>
       </body>
     </html>

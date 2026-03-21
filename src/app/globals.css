@@ -2,10 +2,67 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  --primary: #dc2626;
+  --primary-hover: #b91c1c;
+  --primary-text: #dc2626;
+  --primary-soft: #fef2f2;
+  --surface-page: #ffffff;
+  --surface-card: #ffffff;
+  --surface-hover: #f3f4f6;
+  --surface-subtle: #fafafa;
+  --border: #f0f0f0;
+  --border-input: #d1d5db;
+  --text-heading: #111827;
+  --text-body: #4b5563;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --text-label: #374151;
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+}
+
+.dark {
+  --primary: #ef4444;
+  --primary-hover: #dc2626;
+  --primary-text: #f87171;
+  --primary-soft: #7f1d1d33;
+  --surface-page: #111827;
+  --surface-card: #1f2937;
+  --surface-hover: #374151;
+  --surface-subtle: #1a2332;
+  --border: #2d3748;
+  --border-input: #4b5563;
+  --text-heading: #f3f4f6;
+  --text-body: #9ca3af;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-label: #d1d5db;
+  --success: #4ade80;
+  --success-soft: #14532d33;
+}
+
 @theme inline {
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
   --animate-shake: shake 0.4s ease-in-out;
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-text: var(--primary-text);
+  --color-primary-soft: var(--primary-soft);
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-border: var(--border);
+  --color-border-input: var(--border-input);
+  --color-text-heading: var(--text-heading);
+  --color-text-body: var(--text-body);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-label: var(--text-label);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
 }
 
 @keyframes shake {
@@ -17,13 +74,12 @@
 }
 
 body {
-  background: #ffffff;
+  background: var(--surface-page);
   color: #171717;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 .dark body {
-  background: #111827;
   color: #f3f4f6;
 }
 
@@ -58,13 +114,9 @@ rt {
 }
 
 .tiptap blockquote {
-  border-left: 3px solid #d1d5db;
+  border-left: 3px solid var(--border-input);
   padding-left: 1em;
   font-style: italic;
-}
-
-.dark .tiptap blockquote {
-  border-left-color: #4b5563;
 }
 
 .tiptap h2 {
@@ -91,10 +143,6 @@ rt {
 
 /* Word hover highlight */
 .pinyin-display [data-word]:hover {
-  background-color: rgba(13, 148, 136, 0.1);
+  background-color: var(--primary-soft);
   border-radius: 2px;
-}
-
-.dark .pinyin-display [data-word]:hover {
-  background-color: rgba(13, 148, 136, 0.08);
 }

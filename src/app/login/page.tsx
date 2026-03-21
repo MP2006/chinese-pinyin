@@ -59,10 +59,10 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <h1 className="mb-1 text-center text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+      <h1 className="mb-1 text-center text-3xl font-bold tracking-tight text-text-heading">
         {mode === "login" ? "Welcome back" : "Create account"}
       </h1>
-      <p className="mb-8 text-center text-sm text-gray-500 dark:text-gray-400">
+      <p className="mb-10 text-center text-sm text-text-secondary">
         {mode === "login"
           ? "Sign in to sync your flashcards"
           : "Sign up to save your flashcards to the cloud"}
@@ -72,7 +72,7 @@ function LoginForm() {
       <button
         onClick={handleGoogleLogin}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-input bg-surface-card px-4 py-3 text-sm font-medium text-gray-700 shadow-none transition-colors hover:bg-gray-50 disabled:opacity-50 dark:text-gray-200 dark:hover:bg-gray-700"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path
@@ -96,9 +96,9 @@ function LoginForm() {
       </button>
 
       <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-        <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
-        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-text-muted">or</span>
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       {/* Email / Password form */}
@@ -109,7 +109,7 @@ function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-teal-500 focus:ring-1 focus:ring-teal-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+          className="w-full rounded-lg border border-border-input bg-surface-card px-3 py-2.5 text-sm text-text-heading placeholder-gray-400 outline-none transition-colors focus:border-primary-text dark:placeholder-gray-500"
         />
         <input
           type="password"
@@ -118,12 +118,12 @@ function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
-          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-teal-500 focus:ring-1 focus:ring-teal-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+          className="w-full rounded-lg border border-border-input bg-surface-card px-3 py-2.5 text-sm text-text-heading placeholder-gray-400 outline-none transition-colors focus:border-primary-text dark:placeholder-gray-500"
         />
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+          className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {loading ? "..." : mode === "login" ? "Sign in" : "Sign up"}
         </button>
@@ -135,14 +135,14 @@ function LoginForm() {
         </p>
       )}
 
-      <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-6 text-center text-sm text-text-secondary">
         {mode === "login" ? "No account? " : "Already have an account? "}
         <button
           onClick={() => {
             setMode(mode === "login" ? "signup" : "login");
             setError("");
           }}
-          className="font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300"
+          className="font-medium text-primary-text hover:text-red-700 dark:hover:text-red-300"
         >
           {mode === "login" ? "Sign up" : "Sign in"}
         </button>
@@ -153,7 +153,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-4 pt-14 transition-colors md:pt-0 dark:bg-gray-900">
+    <main className="flex min-h-screen items-center justify-center bg-surface-page px-4 pt-14 transition-colors md:pt-0">
       <Suspense>
         <LoginForm />
       </Suspense>

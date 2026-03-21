@@ -6,7 +6,9 @@ import PinyinDisplay from "@/components/PinyinDisplay";
 import SelectionToolbar from "@/components/SelectionToolbar";
 import DefinitionPopup from "@/components/DefinitionPopup";
 import { useFlashcards } from "@/hooks/useFlashcards";
+import { CloseIcon } from "@/components/Icons";
 import { useWordDefinition } from "@/hooks/useWordDefinition";
+import { useAuth } from "@/contexts/AuthContext";
 import { JSONContent } from "@tiptap/react";
 import { logApiCall } from "@/lib/apiUsage";
 
@@ -16,7 +18,8 @@ type Lang = "en" | "vi";
 const LANG_LABELS: Record<Lang, string> = { en: "EN", vi: "VI" };
 
 export default function Home() {
-  const { addCard, hasCard } = useFlashcards();
+  const { user } = useAuth();
+  const { addCard, hasCard, syncError, clearSyncError } = useFlashcards();
   const [plainText, setPlainText] = useState("");
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
   const [translations, setTranslations] = useState<Record<string, string>>({});
@@ -152,14 +155,22 @@ export default function Home() {
   const showTranslations = enabledLanguages.size > 0 && hasContent;
 
   return (
-    <main className="min-h-screen bg-white pt-14 transition-colors md:pt-0 dark:bg-gray-900">
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <main className="min-h-screen bg-surface-page pt-14 transition-colors md:pt-0">
+      <div className="mx-auto max-w-4xl px-6 py-16 sm:px-8">
+        {syncError && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-primary-soft px-4 py-3 text-sm text-primary-text dark:border-red-800">
+            <span>{syncError}</span>
+            <button onClick={clearSyncError} className="ml-3 shrink-0 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300" aria-label="Dismiss error">
+              <CloseIcon className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-text-heading">
             Hànzì Helper
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm text-text-secondary">
             Type Chinese characters to see pinyin and translation
           </p>
         </div>
@@ -174,17 +185,17 @@ export default function Home() {
 
         {/* Results */}
         {hasContent && (
-          <div className="mt-6">
+          <div className="mt-8">
             {/* Language toggle pills */}
             <div className="mb-4 flex items-center justify-end gap-2">
               {(Object.keys(LANG_LABELS) as Lang[]).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => toggleLanguage(lang)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                     enabledLanguages.has(lang)
-                      ? "bg-teal-600 text-white dark:bg-teal-500 dark:text-white"
-                      : "border border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500"
+                      ? "bg-primary text-white"
+                      : "border border-border-input text-text-secondary hover:border-gray-400 hover:text-gray-600 dark:hover:border-gray-500"
                   }`}
                 >
                   {LANG_LABELS[lang]}
@@ -195,7 +206,7 @@ export default function Home() {
             {/* Pinyin display with TTS and definition popup */}
             <div
               ref={pinyinContainerRef}
-              className="relative rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+              className="relative rounded-lg border border-border bg-surface-card p-6"
             >
               <PinyinDisplay
                 doc={editorJson}
@@ -213,6 +224,7 @@ export default function Home() {
                   onClose={clearSelection}
                   onAddCard={addCard}
                   isSaved={hasCard(selectedWord)}
+                  isLoggedIn={!!user}
                 />
               )}
             </div>
@@ -222,18 +234,18 @@ export default function Home() {
               Array.from(enabledLanguages).map((lang) => (
                 <div
                   key={lang}
-                  className="mt-3 rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+                  className="mt-3 rounded-lg border border-border bg-surface-card p-6"
                 >
-                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">
                     {lang === "en" ? "English" : "Tiếng Việt"}
                   </div>
                   {translatingLangs.has(lang) ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-teal-600 dark:border-gray-600 dark:border-t-teal-400" />
+                    <div className="flex items-center gap-2 text-sm text-text-muted">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-red-600 dark:border-gray-600 dark:border-t-red-400" />
                       Translating...
                     </div>
                   ) : translations[lang] ? (
-                    <p className="whitespace-pre-line text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                    <p className="whitespace-pre-line text-lg leading-relaxed text-text-label">
                       {translations[lang]}
                     </p>
                   ) : null}
