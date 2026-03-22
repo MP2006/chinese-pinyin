@@ -47,8 +47,9 @@ export async function translateText(
   text: string,
   targetLang: string
 ): Promise<string> {
-  return Promise.any([
-    translateWithLingva(text, targetLang),
-    translateWithMyMemory(text, targetLang),
-  ]);
+  try {
+    return await translateWithLingva(text, targetLang);
+  } catch {
+    return await translateWithMyMemory(text, targetLang);
+  }
 }

@@ -7,12 +7,12 @@
   --primary-hover: #b91c1c;
   --primary-text: #dc2626;
   --primary-soft: #fef2f2;
-  --surface-page: #ffffff;
+  --surface-page: #f7f7f5;
   --surface-card: #ffffff;
-  --surface-hover: #f3f4f6;
-  --surface-subtle: #fafafa;
-  --border: #f0f0f0;
-  --border-input: #d1d5db;
+  --surface-hover: #efefed;
+  --surface-subtle: #f1f1ef;
+  --border: #e8e8e4;
+  --border-input: #d4d4d0;
   --text-heading: #111827;
   --text-body: #4b5563;
   --text-secondary: #6b7280;

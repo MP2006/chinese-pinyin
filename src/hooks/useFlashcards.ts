@@ -175,6 +175,7 @@ export function useFlashcards() {
                 easeFactor: sm2.easeFactor,
                 reviewCount: sm2.reviewCount,
                 nextReview: sm2.nextReview,
+                lastRating: rating,
               }
         )
       );
@@ -187,6 +188,7 @@ export function useFlashcards() {
           ease_factor: sm2.easeFactor,
           review_count: sm2.reviewCount,
           next_review: sm2.nextReview,
+          last_rating: rating,
         })
         .eq("id", id)
         .eq("user_id", user.id);

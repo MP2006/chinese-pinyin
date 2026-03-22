@@ -9,23 +9,34 @@ import { useFlashcards } from "@/hooks/useFlashcards";
 import { CloseIcon } from "@/components/Icons";
 import { useWordDefinition } from "@/hooks/useWordDefinition";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useTranslation } from "@/locales";
 import { JSONContent } from "@tiptap/react";
 import { logApiCall } from "@/lib/apiUsage";
 
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 
-type Lang = "en" | "vi";
-const LANG_LABELS: Record<Lang, string> = { en: "EN", vi: "VI" };
+const EDITOR_STORAGE_KEY = "editor-content";
+
+function readSavedContent(): JSONContent | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = sessionStorage.getItem(EDITOR_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function Home() {
   const { user } = useAuth();
+  const { lang } = useSettings();
+  const t = useTranslation();
   const { addCard, hasCard, syncError, clearSyncError } = useFlashcards();
   const [plainText, setPlainText] = useState("");
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
+  const initialContentRef = useRef<JSONContent | null>(readSavedContent);
   const [translations, setTranslations] = useState<Record<string, string>>({});
-  const [enabledLanguages, setEnabledLanguages] = useState<Set<Lang>>(
-    () => new Set(["en"])
-  );
   const [translatingLangs, setTranslatingLangs] = useState<Set<string>>(
     new Set()
   );
@@ -41,7 +52,7 @@ export default function Home() {
     definitionLoading,
     handleWordClick,
     clearSelection,
-  } = useWordDefinition(pinyinContainerRef, enabledLanguages);
+  } = useWordDefinition(pinyinContainerRef);
 
   const fetchTranslation = useCallback(
     async (text: string, lang: string) => {
@@ -92,7 +103,7 @@ export default function Home() {
         if (err instanceof Error && err.name !== "AbortError") {
           setTranslations((prev) => ({
             ...prev,
-            [lang]: "Translation unavailable",
+            [lang]: t.home.translationUnavailable,
           }));
           setTranslatingLangs((prev) => {
             const next = new Set(prev);
@@ -105,25 +116,25 @@ export default function Home() {
     []
   );
 
-  // Debounced translation fetch for all enabled languages
+  // Debounced translation fetch for the selected language
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
     if (!plainText.trim()) {
+      // Abort any in-flight translation requests to prevent stale responses
+      Object.values(abortControllersRef.current).forEach((c) => c.abort());
+      abortControllersRef.current = {};
       setTranslations({});
       setTranslatingLangs(new Set());
       return;
     }
 
-    // Mark all enabled languages as translating
-    setTranslatingLangs(new Set(enabledLanguages));
+    setTranslatingLangs(new Set([lang]));
 
     debounceRef.current = setTimeout(() => {
-      enabledLanguages.forEach((lang) => {
-        fetchTranslation(plainText, lang);
-      });
+      fetchTranslation(plainText, lang);
     }, 300);
 
     return () => {
@@ -131,28 +142,9 @@ export default function Home() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [plainText, enabledLanguages, fetchTranslation]);
-
-  const toggleLanguage = (lang: Lang) => {
-    setEnabledLanguages((prev) => {
-      const next = new Set(prev);
-      if (next.has(lang)) {
-        next.delete(lang);
-        // Clear translation for this language
-        setTranslations((t) => {
-          const updated = { ...t };
-          delete updated[lang];
-          return updated;
-        });
-      } else {
-        next.add(lang);
-      }
-      return next;
-    });
-  };
+  }, [plainText, lang, fetchTranslation]);
 
   const hasContent = plainText.trim().length > 0;
-  const showTranslations = enabledLanguages.size > 0 && hasContent;
 
   return (
     <main className="min-h-screen bg-surface-page pt-14 transition-colors md:pt-0">
@@ -160,7 +152,7 @@ export default function Home() {
         {syncError && (
           <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-primary-soft px-4 py-3 text-sm text-primary-text dark:border-red-800">
             <span>{syncError}</span>
-            <button onClick={clearSyncError} className="ml-3 shrink-0 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300" aria-label="Dismiss error">
+            <button onClick={clearSyncError} className="ml-3 shrink-0 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300" aria-label={t.common.dismissError}>
               <CloseIcon className="h-4 w-4" />
             </button>
           </div>
@@ -168,45 +160,32 @@ export default function Home() {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold tracking-tight text-text-heading">
-            Hànzì Helper
+            {t.home.title}
           </h1>
           <p className="mt-2 text-sm text-text-secondary">
-            Type Chinese characters to see pinyin and translation
+            {t.home.subtitle}
           </p>
         </div>
 
         {/* Editor */}
         <Editor
+          initialContent={initialContentRef.current ?? undefined}
           onUpdate={({ text, json }) => {
             setPlainText(text);
             setEditorJson(json);
+            try {
+              sessionStorage.setItem(EDITOR_STORAGE_KEY, JSON.stringify(json));
+            } catch {}
           }}
         />
 
         {/* Results */}
         {hasContent && (
           <div className="mt-8">
-            {/* Language toggle pills */}
-            <div className="mb-4 flex items-center justify-end gap-2">
-              {(Object.keys(LANG_LABELS) as Lang[]).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => toggleLanguage(lang)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    enabledLanguages.has(lang)
-                      ? "bg-primary text-white"
-                      : "border border-border-input text-text-secondary hover:border-gray-400 hover:text-gray-600 dark:hover:border-gray-500"
-                  }`}
-                >
-                  {LANG_LABELS[lang]}
-                </button>
-              ))}
-            </div>
-
             {/* Pinyin display with TTS and definition popup */}
             <div
               ref={pinyinContainerRef}
-              className="relative rounded-lg border border-border bg-surface-card p-6"
+              className="relative rounded-lg bg-surface-subtle p-6"
             >
               <PinyinDisplay
                 doc={editorJson}
@@ -220,7 +199,6 @@ export default function Home() {
                   position={wordPosition}
                   definitions={wordDefinition.definitions}
                   loading={definitionLoading}
-                  enabledLanguages={enabledLanguages}
                   onClose={clearSelection}
                   onAddCard={addCard}
                   isSaved={hasCard(selectedWord)}
@@ -229,28 +207,25 @@ export default function Home() {
               )}
             </div>
 
-            {/* Translations */}
-            {showTranslations &&
-              Array.from(enabledLanguages).map((lang) => (
-                <div
-                  key={lang}
-                  className="mt-3 rounded-lg border border-border bg-surface-card p-6"
-                >
-                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">
-                    {lang === "en" ? "English" : "Tiếng Việt"}
-                  </div>
-                  {translatingLangs.has(lang) ? (
-                    <div className="flex items-center gap-2 text-sm text-text-muted">
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-red-600 dark:border-gray-600 dark:border-t-red-400" />
-                      Translating...
-                    </div>
-                  ) : translations[lang] ? (
-                    <p className="whitespace-pre-line text-lg leading-relaxed text-text-label">
-                      {translations[lang]}
-                    </p>
-                  ) : null}
+            {/* Translation */}
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-text-muted">{t.home.translation}</h3>
+            </div>
+            <div className="mt-3 rounded-lg border border-border bg-surface-card p-6">
+              <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">
+                {t.common.langName}
+              </div>
+              {translatingLangs.has(lang) ? (
+                <div className="flex items-center gap-2 text-sm text-text-muted">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-red-600 dark:border-gray-600 dark:border-t-red-400" />
+                  {t.home.translating}
                 </div>
-              ))}
+              ) : translations[lang] ? (
+                <p className="whitespace-pre-line text-lg leading-relaxed text-text-label">
+                  {translations[lang]}
+                </p>
+              ) : null}
+            </div>
           </div>
         )}
       </div>

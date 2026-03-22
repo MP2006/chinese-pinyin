@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, RefObject } from "react";
 import { compareChineseText, type CompareResult } from "@/lib/compareText";
 import { logApiCall } from "@/lib/apiUsage";
+import { useTranslation } from "@/locales";
 
 type RecordingState = "idle" | "listening" | "results";
 
@@ -36,10 +37,11 @@ export default function SpeechPractice({
   containerRef,
   onPlayReference,
 }: SpeechPracticeProps) {
+  const t = useTranslation();
   const [state, setState] = useState<RecordingState>("idle");
   const [recognizedText, setRecognizedText] = useState("");
   const [result, setResult] = useState<CompareResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<"noSpeech" | "micDenied" | "other" | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -87,11 +89,11 @@ export default function SpeechPractice({
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (event.error === "no-speech") {
-        setError("No speech detected. Try again.");
+        setError("noSpeech");
       } else if (event.error === "not-allowed") {
-        setError("Microphone access denied.");
+        setError("micDenied");
       } else {
-        setError("Recognition failed. Try again.");
+        setError("other");
       }
       setState("idle");
     };
@@ -177,7 +179,7 @@ export default function SpeechPractice({
             ? "bg-primary text-white hover:bg-primary-hover"
             : "text-white hover:bg-gray-700 active:bg-gray-600 dark:text-gray-900 dark:hover:bg-gray-300 dark:active:bg-gray-400"
         }`}
-        aria-label={state === "listening" ? "Stop recording" : "Practice pronunciation"}
+        aria-label={state === "listening" ? t.speech.stopRecording : t.speech.practicePronunciation}
       >
         {state === "listening" ? (
           <span className="relative flex h-3.5 w-3.5 items-center justify-center">
@@ -190,7 +192,7 @@ export default function SpeechPractice({
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         )}
-        {state === "listening" ? "Stop" : "Practice"}
+        {state === "listening" ? t.speech.stop : t.speech.practice}
       </button>
 
       {/* Error toast */}
@@ -199,7 +201,7 @@ export default function SpeechPractice({
           className="absolute z-40 w-56 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 shadow-lg dark:border-red-800 dark:bg-red-900/50 dark:text-red-300"
           style={popupStyle}
         >
-          {error}
+          {error === "noSpeech" ? t.speech.noSpeech : error === "micDenied" ? t.speech.micDenied : t.speech.recognitionFailed}
         </div>
       )}
 
@@ -216,7 +218,7 @@ export default function SpeechPractice({
               {result.accuracy}%
             </span>
             <div className="mt-0.5 text-xs text-text-secondary">
-              Accuracy
+              {t.speech.accuracy}
             </div>
           </div>
 
@@ -249,9 +251,9 @@ export default function SpeechPractice({
 
           {/* Recognized text */}
           <div className="mb-3 text-xs text-text-secondary">
-            <span className="font-medium">You said:</span>{" "}
+            <span className="font-medium">{t.speech.youSaid}</span>{" "}
             <span className="text-text-label">
-              {recognizedText || "(nothing detected)"}
+              {recognizedText || t.speech.nothingDetected}
             </span>
           </div>
 
@@ -261,13 +263,13 @@ export default function SpeechPractice({
               onClick={handleTryAgain}
               className="flex-1 rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300"
             >
-              Try Again
+              {t.speech.tryAgain}
             </button>
             <button
               onClick={onPlayReference}
               className="flex-1 rounded-md border border-border-input px-3 py-2 text-xs font-medium text-text-label transition-colors hover:bg-gray-50 dark:hover:bg-surface-hover"
             >
-              Hear Reference
+              {t.speech.hearReference}
             </button>
           </div>
         </div>

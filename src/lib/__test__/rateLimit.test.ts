@@ -64,3 +64,72 @@ describe("rateLimit (in-memory fallback)", () => {
     expect(result.retryAfter).toBe(7);
   });
 });
+
+describe("rateLimit (Upstash Redis)", () => {
+  const mockLimit = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    mockLimit.mockReset();
+
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://fake.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "fake-token");
+
+    vi.doMock("@upstash/redis", () => ({
+      Redis: class MockRedis {},
+    }));
+    vi.doMock("@upstash/ratelimit", () => {
+      class MockRatelimit {
+        limit = mockLimit;
+        static slidingWindow = vi.fn();
+      }
+      return { Ratelimit: MockRatelimit };
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("allows requests when Upstash returns success", async () => {
+    mockLimit.mockResolvedValue({ success: true, reset: Date.now() + 60_000 });
+
+    const { rateLimit: rl } = await import("../rateLimit");
+    const result = await rl("test-key", { maxRequests: 5, windowMs: 60_000 });
+    expect(result.limited).toBe(false);
+    expect(result.retryAfter).toBe(0);
+  });
+
+  it("blocks requests when Upstash returns failure", async () => {
+    mockLimit.mockResolvedValue({ success: false, reset: Date.now() + 30_000 });
+
+    const { rateLimit: rl } = await import("../rateLimit");
+    const result = await rl("test-key", { maxRequests: 5, windowMs: 60_000 });
+    expect(result.limited).toBe(true);
+    expect(result.retryAfter).toBeGreaterThan(0);
+  });
+
+  it("returns retryAfter of at least 1 second", async () => {
+    // reset is in the past (edge case), retryAfter would be negative but clamped to 1
+    mockLimit.mockResolvedValue({ success: false, reset: Date.now() - 500 });
+
+    const { rateLimit: rl } = await import("../rateLimit");
+    const result = await rl("test-key", { maxRequests: 5, windowMs: 60_000 });
+    expect(result.limited).toBe(true);
+    expect(result.retryAfter).toBe(1);
+  });
+
+  it("reuses limiter for multiple requests with same config", async () => {
+    mockLimit.mockResolvedValue({ success: true, reset: Date.now() + 60_000 });
+
+    const mod = await import("../rateLimit");
+    const r1 = await mod.rateLimit("key-a", { maxRequests: 5, windowMs: 60_000 });
+    const r2 = await mod.rateLimit("key-b", { maxRequests: 5, windowMs: 60_000 });
+
+    // Both calls use the same cached limiter, both succeed
+    expect(r1.limited).toBe(false);
+    expect(r2.limited).toBe(false);
+    // mockLimit was called twice (once per rateLimit call)
+    expect(mockLimit).toHaveBeenCalledTimes(2);
+  });
+});

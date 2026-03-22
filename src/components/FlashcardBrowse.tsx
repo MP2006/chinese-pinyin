@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Flashcard } from "@/lib/flashcardStore";
 import { useTTS } from "@/hooks/useTTS";
+import { useTranslation } from "@/locales";
 import { SpeakerIcon } from "./Icons";
 
 interface FlashcardBrowseProps {
@@ -15,6 +16,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
   const [flippedId, setFlippedId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const { speak, speaking } = useTTS();
+  const t = useTranslation();
 
   const filtered = cards.filter((card) => {
     if (!search) return true;
@@ -32,7 +34,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Search words, pinyin, or definitions..."
+          placeholder={t.flashcards.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-lg border border-border bg-surface-card px-4 py-2.5 text-sm text-text-heading placeholder-gray-400 outline-none transition-colors focus:border-primary-text dark:placeholder-gray-500"
@@ -42,7 +44,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
       {/* Grid */}
       {filtered.length === 0 ? (
         <p className="py-12 text-center text-sm text-text-secondary">
-          No matching cards
+          {t.flashcards.noMatchingCards}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -72,7 +74,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
                       className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                       onClick={(e) => { e.stopPropagation(); speak(card.word); }}
                       disabled={speaking}
-                      aria-label="Speak word"
+                      aria-label={t.flashcards.speakWord}
                     >
                       <SpeakerIcon className={`h-3.5 w-3.5 ${speaking ? "animate-pulse" : ""}`} />
                     </button>
@@ -92,7 +94,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
                           setConfirmDeleteId(card.id);
                         }
                       }}
-                      aria-label={confirmDeleteId === card.id ? "Confirm delete" : "Delete card"}
+                      aria-label={confirmDeleteId === card.id ? t.flashcards.confirmDelete : t.flashcards.deleteCard}
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -115,7 +117,7 @@ export default function FlashcardBrowse({ cards, onDelete }: FlashcardBrowseProp
                       {Object.entries(card.definitions).map(([lang, def]) => (
                         <div key={lang}>
                           <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                            {lang === "en" ? "English" : lang === "vi" ? "Tiếng Việt" : lang}
+                            {lang === "en" ? t.common.langNameEn : lang === "vi" ? t.common.langNameVi : lang}
                           </span>
                           <p className="text-sm text-text-label">{def}</p>
                         </div>

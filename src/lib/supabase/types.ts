@@ -1,4 +1,4 @@
-import type { Flashcard } from "@/lib/flashcardStore";
+import type { Flashcard, ReviewRating } from "@/lib/flashcardStore";
 
 export interface FlashcardRow {
   id: string;
@@ -11,6 +11,7 @@ export interface FlashcardRow {
   interval: number;
   ease_factor: number;
   review_count: number;
+  last_rating: string | null;
 }
 
 export function mapDbToFlashcard(row: FlashcardRow): Flashcard {
@@ -24,5 +25,6 @@ export function mapDbToFlashcard(row: FlashcardRow): Flashcard {
     interval: row.interval,
     easeFactor: row.ease_factor,
     reviewCount: row.review_count,
+    lastRating: (row.last_rating as ReviewRating) ?? undefined,
   };
 }

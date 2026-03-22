@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, RefObject } from "react";
 import SpeechPractice, { isSpeechRecognitionSupported } from "./SpeechPractice";
 import { useTTS } from "@/hooks/useTTS";
+import { useTranslation } from "@/locales";
 import { SpeakerIcon, SpeakerWaveIcon } from "./Icons";
 
 interface SelectionToolbarProps {
@@ -23,6 +24,7 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
   const [selectedText, setSelectedText] = useState("");
   const [supportsSpeechRecognition, setSupportsSpeechRecognition] = useState(false);
   const { speak, speaking } = useTTS();
+  const t = useTranslation();
 
   useEffect(() => {
     setSupportsSpeechRecognition(isSpeechRecognitionSupported());
@@ -97,14 +99,14 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-700 active:bg-gray-600 disabled:opacity-50 dark:text-gray-900 dark:hover:bg-gray-300 dark:active:bg-gray-400"
         onClick={() => speak(selectedText)}
         disabled={speaking}
-        aria-label="Speak selected text"
+        aria-label={t.selection.speakSelected}
       >
         {speaking ? (
           <SpeakerWaveIcon className="h-3.5 w-3.5 animate-pulse" />
         ) : (
           <SpeakerIcon className="h-3.5 w-3.5" />
         )}
-        Listen
+        {t.selection.listen}
       </button>
 
       {/* Practice button (only if browser supports SpeechRecognition) */}

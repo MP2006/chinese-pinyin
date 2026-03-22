@@ -9,6 +9,7 @@ Built with Next.js 16, React 19, TailwindCSS 4, and Tiptap.
 ### Rich Text Editor
 - Full formatting toolbar: bold, italic, strikethrough, headings, lists, blockquotes
 - Type or paste Chinese text and see it instantly annotated with pinyin
+- Editor content persists across page navigation (saved to sessionStorage)
 
 ### Pinyin Annotation
 - Automatic character-level pinyin with tone marks (e.g. mā, má, mǎ, mà)
@@ -18,7 +19,7 @@ Built with Next.js 16, React 19, TailwindCSS 4, and Tiptap.
 ### Translation
 - Translate full text into English and/or Vietnamese
 - Toggle languages on/off with language pills
-- Dual-API strategy (Lingva + MyMemory fallback) for reliability
+- Lingva as primary translation API with MyMemory as fallback for reliability
 - Concurrency-limited: max 5 lines translated in parallel to avoid overwhelming upstream APIs
 
 ### Word Definitions
@@ -106,14 +107,14 @@ Open [http://localhost:3000](http://localhost:3000) to use the app.
 
 ## API Security
 
-- **Rate limiting** — In-memory sliding-window limiter per client IP on all API routes (`/api/translate` 30/min, `/api/define` 60/min, `/api/tts` 30/min). Returns `429` with `Retry-After` header when exceeded. Note: resets on serverless cold starts; for production serverless, consider Upstash Redis or Vercel WAF.
+- **Rate limiting** — Sliding-window limiter per client IP on all API routes (`/api/translate` 30/min, `/api/define` 60/min, `/api/tts` 30/min). Returns `429` with `Retry-After` header when exceeded. Supports **Upstash Redis** for distributed rate limiting across serverless instances; falls back to in-memory when env vars are not set.
 - **Input validation** — `/api/translate` max 10,000 chars / 100 lines, `/api/define` max 50 chars, `/api/tts` max 500 chars. Returns `400` if exceeded.
 - **OAuth redirect protection** — The `next` parameter in `/auth/callback` is validated to prevent open redirects (must be a relative path, no protocol).
 - **Supabase defense-in-depth** — All flashcard mutations filter by `user_id` in addition to Row Level Security.
 
 ## Testing
 
-220 tests across 24 test files using [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/).
+243 tests across 26 test files using [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/). Overall line coverage: ~97%.
 
 Tests live in `__test__` subdirectories next to the code they test:
 
@@ -126,8 +127,8 @@ Tests live in `__test__` subdirectories next to the code they test:
 | `src/app/__test__/` | Global error boundary |
 | `src/app/api/*/__test__/` | API route handlers (`/api/translate`, `/api/define`, `/api/tts`) |
 | `src/app/auth/callback/__test__/` | OAuth callback redirect validation |
-| `src/lib/__test__/rateLimit.test.ts` | Rate limiter (sliding window, expiry, independent keys) |
-| `src/components/__test__/` | React components (`DefinitionPopup`, `FlashcardViewer`, `FlashcardBrowse`, `FlashcardLearn`, `FlashcardMatch`, `PinyinDisplay`, `Editor`) |
+| `src/lib/__test__/rateLimit.test.ts` | Rate limiter (in-memory sliding window + Upstash Redis path) |
+| `src/components/__test__/` | React components (`DefinitionPopup`, `FlashcardViewer`, `FlashcardBrowse`, `FlashcardLearn`, `FlashcardMatch`, `PinyinDisplay`, `Editor`, `Icons`) |
 
 ## Tech Stack
 

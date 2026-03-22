@@ -8,6 +8,7 @@ import { isSpeechRecognitionSupported } from "./SpeechPractice";
 import { logApiCall } from "@/lib/apiUsage";
 import { useOCR, extractChineseLines, type OCRLine } from "@/hooks/useOCR";
 import { CloseIcon, CheckIcon } from "./Icons";
+import { useTranslation } from "@/locales";
 import {
   readClipboardImage,
   isClipboardReadSupported,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/screenCapture";
 
 interface EditorProps {
+  initialContent?: JSONContent;
   onUpdate: (data: { text: string; json: JSONContent }) => void;
 }
 
@@ -52,14 +54,15 @@ interface OCRPreview {
   imgH: number;
 }
 
-export default function Editor({ onUpdate }: EditorProps) {
+export default function Editor({ initialContent, onUpdate }: EditorProps) {
+  const t = useTranslation();
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const [dragging, setDragging] = useState(false);
   const [ocrPreview, setOcrPreview] = useState<OCRPreview | null>(null);
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [insertedLines, setInsertedLines] = useState<Set<number>>(new Set());
-  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrError, setOcrError] = useState<"noText" | "noChinese" | "noClipboard" | null>(null);
   const dragCounterRef = useRef(0);
   const { recognize, status: ocrStatus } = useOCR();
 
@@ -84,12 +87,18 @@ export default function Editor({ onUpdate }: EditorProps) {
 
   const editor = useEditor({
     extensions: [StarterKit],
+    content: initialContent || undefined,
     immediatelyRender: false,
     editorProps: {
       attributes: {
         class:
           "tiptap min-h-[160px] px-4 py-3 text-lg text-text-heading outline-none",
       },
+    },
+    onCreate: ({ editor }) => {
+      if (editor.getText().trim()) {
+        onUpdate({ text: editor.getText(), json: editor.getJSON() });
+      }
     },
     onUpdate: ({ editor }) => {
       onUpdate({
@@ -120,7 +129,7 @@ export default function Editor({ onUpdate }: EditorProps) {
       logApiCall(source, rawLines.length);
 
       if (rawLines.length === 0) {
-        setOcrError("No text detected in image");
+        setOcrError("noText");
         setPendingImageUrl(null);
         URL.revokeObjectURL(imageUrl);
         return;
@@ -128,7 +137,7 @@ export default function Editor({ onUpdate }: EditorProps) {
 
       const lines = extractChineseLines(rawLines);
       if (lines.length === 0) {
-        setOcrError("No Chinese characters found in image");
+        setOcrError("noChinese");
         setPendingImageUrl(null);
         URL.revokeObjectURL(imageUrl);
         return;
@@ -213,7 +222,7 @@ export default function Editor({ onUpdate }: EditorProps) {
   const handleClipboardOCR = useCallback(async () => {
     const blob = await readClipboardImage();
     if (!blob) {
-      setOcrError("No image found in clipboard");
+      setOcrError("noClipboard");
       return;
     }
     processImage(blob, "/ocr/clipboard");
@@ -267,7 +276,7 @@ export default function Editor({ onUpdate }: EditorProps) {
   return (
     <div>
       <div
-        className={`overflow-hidden rounded-lg border bg-surface-card transition-colors focus-within:border-primary-text ${
+        className={`overflow-hidden rounded-lg border bg-surface-card transition-colors ${
           dragging
             ? "border-red-500 ring-2 ring-red-500/30 dark:border-red-400"
             : "border-border"
@@ -312,19 +321,19 @@ export default function Editor({ onUpdate }: EditorProps) {
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
           >
-            • List
+            {t.editor.bulletList}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             active={editor.isActive("orderedList")}
           >
-            1. List
+            {t.editor.orderedList}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             active={editor.isActive("blockquote")}
           >
-            &ldquo; Quote
+            {t.editor.quote}
           </ToolbarButton>
 
           {showMicButton && (
@@ -342,7 +351,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                     : "text-text-body hover:bg-surface-hover"
                 }`}
                 aria-label={
-                  listening ? "Stop voice input" : "Start voice input"
+                  listening ? t.editor.stopVoice : t.editor.startVoice
                 }
               >
                 {listening ? (
@@ -361,7 +370,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                   </svg>
                 )}
                 <span className="hidden sm:inline">
-                  {listening ? "Stop" : "Mic"}
+                  {listening ? t.editor.stop : t.editor.mic}
                 </span>
               </button>
             </>
@@ -382,7 +391,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                     ? "bg-primary text-white"
                     : "text-text-body hover:bg-surface-hover"
                 } disabled:opacity-70`}
-                aria-label="Paste image from clipboard for OCR"
+                aria-label={t.editor.pasteClipboard}
               >
                 <svg
                   className="h-3.5 w-3.5"
@@ -394,7 +403,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                   <rect x="8" y="2" width="8" height="4" rx="1" strokeLinecap="round" />
                   <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" strokeLinecap="round" />
                 </svg>
-                <span className="hidden sm:inline">Paste</span>
+                <span className="hidden sm:inline">{t.editor.paste}</span>
               </button>
             </>
           )}
@@ -409,7 +418,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Drop screenshot to extract Chinese text
+                {t.editor.dropOverlay}
               </div>
             </div>
           )}
@@ -423,11 +432,11 @@ export default function Editor({ onUpdate }: EditorProps) {
           <div className="flex items-center justify-between border-b border-border px-4 py-2">
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                Screenshot OCR
+                {t.editor.ocrTitle}
               </span>
               {ocrPreview && ocrPreview.lines.length > 0 && (
                 <span className="text-xs text-gray-400 dark:text-gray-500">
-                  Click highlighted text to insert
+                  {t.editor.ocrHint}
                 </span>
               )}
             </div>
@@ -439,14 +448,14 @@ export default function Editor({ onUpdate }: EditorProps) {
                   disabled={insertedLines.size === ocrPreview.lines.length}
                   className="text-xs font-medium text-primary-text hover:text-red-700 disabled:opacity-40 dark:hover:text-red-300"
                 >
-                  Insert all
+                  {t.editor.ocrInsertAll}
                 </button>
               )}
               <button
                 type="button"
                 onClick={dismissPreview}
                 className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                aria-label="Dismiss"
+                aria-label={t.editor.ocrDismiss}
               >
                 <CloseIcon />
               </button>
@@ -462,15 +471,15 @@ export default function Editor({ onUpdate }: EditorProps) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={pendingImageUrl}
-                    alt="Processing screenshot"
+                    alt={t.editor.ocrProcessing}
                     className="w-full rounded border border-gray-200 opacity-60 dark:border-gray-600"
                   />
                 )}
                 <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
                   <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-red-600 dark:border-gray-600 dark:border-t-red-400" />
                   {ocrStatus === "loading-engine"
-                    ? "Downloading Chinese OCR data..."
-                    : "Reading text from image..."}
+                    ? t.editor.ocrDownloading
+                    : t.editor.ocrReading}
                 </div>
               </div>
             )}
@@ -478,7 +487,7 @@ export default function Editor({ onUpdate }: EditorProps) {
             {/* Error state */}
             {ocrError && !ocrBusy && (
               <p className="py-2 text-center text-sm text-primary-text">
-                {ocrError}
+                {ocrError === "noText" ? t.editor.ocrNoText : ocrError === "noChinese" ? t.editor.ocrNoChinese : t.editor.ocrNoClipboard}
               </p>
             )}
 
@@ -488,7 +497,7 @@ export default function Editor({ onUpdate }: EditorProps) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={ocrPreview.imageUrl}
-                  alt="Screenshot with detected Chinese text"
+                  alt={t.editor.ocrScreenshot}
                   className="w-full rounded border border-gray-200 dark:border-gray-600"
                 />
                 {/* Overlay highlights */}

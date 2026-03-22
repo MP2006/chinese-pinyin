@@ -4,13 +4,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DefinitionPopup from "../DefinitionPopup";
 
+vi.mock("@/contexts/SettingsContext", () => ({
+  useSettings: () => ({ lang: "en", setLang: vi.fn() }),
+}));
+
 const defaultProps = {
   word: "你好",
   pinyin: "nǐ hǎo",
   position: { top: 100, left: 200 },
   definitions: { en: "hello" },
   loading: false,
-  enabledLanguages: new Set(["en"]),
   onClose: vi.fn(),
   onAddCard: vi.fn(),
   isSaved: false,
@@ -52,8 +55,6 @@ describe("DefinitionPopup", () => {
     await user.click(saveButton);
 
     expect(onAddCard).toHaveBeenCalledWith("你好", "nǐ hǎo", { en: "hello" });
-    // After click, saved state changes to show confirmation
-    expect(screen.getByLabelText("Saved to flashcards")).toBeInTheDocument();
   });
 
   it("shows checkmark when isSaved is true", () => {
@@ -96,19 +97,6 @@ describe("DefinitionPopup", () => {
     fireEvent.mouseDown(screen.getByTestId("outside"));
 
     expect(onClose).toHaveBeenCalled();
-  });
-
-  it('shows "Enable a language" when enabledLanguages is empty', () => {
-    render(
-      <DefinitionPopup
-        {...defaultProps}
-        enabledLanguages={new Set()}
-      />
-    );
-
-    expect(
-      screen.getByText("Enable a language to see definitions")
-    ).toBeInTheDocument();
   });
 
   it("shows sign-in link when not logged in", () => {

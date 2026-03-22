@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, type RefObject } from "react";
 import { logApiCall } from "@/lib/apiUsage";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface WordDefinition {
   pinyin: string;
@@ -9,9 +10,9 @@ interface WordDefinition {
 }
 
 export function useWordDefinition(
-  containerRef: RefObject<HTMLDivElement | null>,
-  enabledLanguages: Set<string>
+  containerRef: RefObject<HTMLDivElement | null>
 ) {
+  const { lang } = useSettings();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [wordPosition, setWordPosition] = useState({ top: 0, left: 0 });
   const [wordDefinition, setWordDefinition] = useState<WordDefinition>({
@@ -39,7 +40,7 @@ export function useWordDefinition(
       setWordPosition({ top, left });
       setSelectedWord(word);
 
-      const langs = Array.from(enabledLanguages);
+      const langs = [lang];
       const cached = wordCacheRef.current[word];
 
       // Check which langs are already cached
@@ -89,7 +90,7 @@ export function useWordDefinition(
         setDefinitionLoading(false);
       }
     },
-    [containerRef, enabledLanguages]
+    [containerRef, lang]
   );
 
   const clearSelection = useCallback(() => setSelectedWord(null), []);

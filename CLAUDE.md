@@ -36,7 +36,7 @@ src/
 │   ├── usage/page.tsx        # API usage tracker
 │   ├── auth/callback/route.ts # OAuth code exchange
 │   └── api/
-│       ├── translate/route.ts # Full text translation (Lingva + MyMemory race)
+│       ├── translate/route.ts # Full text translation (Lingva primary, MyMemory fallback)
 │       ├── define/route.ts    # Word definitions (CC-CEDICT + Vietnamese translation)
 │       └── tts/route.ts       # Text-to-speech via msedge-tts
 ├── components/
@@ -97,19 +97,22 @@ All flashcard sub-components (Viewer, Browse, Learn, Match) receive data as **pr
 `computeSM2()` is a pure function in `flashcardStore.ts`. It takes a card's current state + rating and returns new `{ interval, easeFactor, reviewCount, nextReview }`. Used by both the localStorage path and the Supabase path.
 
 ### Translation Strategy
-`/api/translate` and `/api/define` use a dual-API race (`Promise.any()`) with Lingva and MyMemory. English definitions come from CC-CEDICT (offline, instant); Vietnamese uses the translation APIs. Multi-line translation uses `pMap` with concurrency of 5 to avoid overwhelming upstream APIs (max 10 outbound HTTP requests at a time, since each line races 2 APIs).
+`/api/translate` and `/api/define` use Lingva as the primary translation API with MyMemory as fallback (sequential, not racing). English definitions come from CC-CEDICT (offline, instant); Vietnamese uses the translation APIs. Multi-line translation uses `pMap` with concurrency of 5 to avoid overwhelming upstream APIs.
+
+### Editor Persistence
+Editor content is saved to `sessionStorage` on every keystroke and restored on page mount via `initialContent` prop. The Editor's `onCreate` callback syncs the parent's `plainText`/`editorJson` state so pinyin and translations re-trigger automatically. Content persists across in-app navigation but clears when the tab closes.
 
 ### CC-CEDICT Dictionary
 `src/data/cedict.json` is **generated** (in `.gitignore`). Regenerate with `npm run build:dict`. In API routes, load it with `fs.readFileSync` + lazy init — do NOT use `import` for large JSON to avoid webpack bundling issues.
 
 ### API Security
-- **Rate limiting**: In-memory sliding-window rate limiter (`src/lib/rateLimit.ts`) keyed by client IP. Limits: `/api/translate` 30 req/min, `/api/define` 60 req/min, `/api/tts` 30 req/min. **Note:** Uses a process-local Map that resets on serverless cold starts — effective for local dev and long-running servers; for production serverless, consider Upstash Redis or Vercel WAF.
+- **Rate limiting**: Sliding-window rate limiter (`src/lib/rateLimit.ts`) keyed by client IP. Limits: `/api/translate` 30 req/min, `/api/define` 60 req/min, `/api/tts` 30 req/min. Supports **Upstash Redis** when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` env vars are set; otherwise falls back to an in-memory `Map` (resets on serverless cold starts).
 - **Input length limits**: `/api/translate` max 10K chars / 100 lines, `/api/define` max 50 char word, `/api/tts` max 500 chars.
 - **OAuth redirect validation**: `auth/callback` validates the `next` param (must start with `/`, no `//` or `://`) to prevent open redirects.
 - **Defense-in-depth**: All Supabase mutation queries in `useFlashcards` include `.eq("user_id", user.id)` alongside RLS.
 
 ### Testing
-**Vitest** with `@testing-library/react` and `@testing-library/user-event`. Config in `vitest.config.ts`. **220 tests across 24 files.**
+**Vitest** with `@testing-library/react` and `@testing-library/user-event`. Config in `vitest.config.ts`. **243 tests across 26 files. Overall line coverage: ~97%.**
 
 - **Default environment**: `node` (fast for pure function tests). Tests needing DOM/localStorage opt in with `// @vitest-environment jsdom` at the top of the file.
 - **Setup file**: `src/__test__/setup.ts` — imports jest-dom matchers, runs `cleanup()` after each test, polyfills `crypto.randomUUID`.
@@ -128,7 +131,7 @@ All flashcard sub-components (Viewer, Browse, Learn, Match) receive data as **pr
 - **Dark mode**: Toggle via `document.documentElement.classList.toggle("dark")`, persisted in localStorage. Inline script in `<head>` prevents flash.
 - **Styling**: Tailwind utility classes only. Dark mode via `dark:` variants. Accent color is teal (`teal-600` light / `teal-400` dark).
 - **Testing**: Vitest + Testing Library. Tests in `__test__/` subdirectories. Use `// @vitest-environment jsdom` comment for tests needing DOM/localStorage (default is `node`).
-- **Shared Icons**: Reusable SVG icons live in `src/components/Icons.tsx` (SpeakerIcon, SpeakerWaveIcon, CloseIcon, CheckIcon, CheckCircleIcon). Each takes an optional `className` prop. Use these instead of inline SVGs for commonly-used icons.
+- **Shared Icons**: Reusable SVG icons live in `src/components/Icons.tsx` (SpeakerIcon, SpeakerWaveIcon, CloseIcon, CheckIcon, CheckCircleIcon, TrashIcon, PlusIcon). Each takes an optional `className` prop. Use these instead of inline SVGs for commonly-used icons.
 - **Shared utilities**: `todayStr()` in `src/lib/dateUtils.ts`, `pMap()` in `src/lib/concurrency.ts`. Import from these rather than defining locally.
 - **`useWordDefinition` hook**: Extracted from `page.tsx` — encapsulates word click handling, definition fetching, and client-side cache. Used by the home page.
 - **Error boundary**: `src/app/error.tsx` catches unhandled errors in all pages (Next.js App Router convention).
@@ -141,4 +144,10 @@ Required in `.env.local` (gitignored):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+```
+
+Optional (enables distributed rate limiting):
+```
+UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=AXxx...
 ```

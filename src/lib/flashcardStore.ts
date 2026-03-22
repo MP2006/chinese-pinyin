@@ -8,6 +8,7 @@ export interface Flashcard {
   interval: number;
   easeFactor: number;
   reviewCount: number;
+  lastRating?: ReviewRating;
 }
 
 export type ReviewRating = "again" | "hard" | "good" | "easy";

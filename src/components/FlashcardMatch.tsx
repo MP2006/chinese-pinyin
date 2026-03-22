@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { Flashcard } from "@/lib/flashcardStore";
+import { useTranslation } from "@/locales";
 import { CheckCircleIcon } from "./Icons";
 
 function shuffle<T>(arr: T[]): T[] {
@@ -25,10 +26,13 @@ interface FlashcardMatchProps {
 }
 
 export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
+  const t = useTranslation();
+  const [round, setRound] = useState(0);
+
   const gameCards = useMemo(() => {
     const shuffledCards = shuffle(cards);
     return shuffledCards.slice(0, 6);
-  }, [cards]);
+  }, [cards, round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tiles = useMemo(() => {
     const t: Tile[] = [];
@@ -101,23 +105,30 @@ export default function FlashcardMatch({ cards }: FlashcardMatchProps) {
   }
 
   function playAgain() {
-    // Force remount by reloading state
-    window.location.reload();
+    setRound((r) => r + 1);
+    setSelected(null);
+    setMatched(new Set());
+    setShaking(new Set());
+    setElapsed(0);
+    setComplete(false);
+    timerRef.current = setInterval(() => {
+      setElapsed((e) => e + 1);
+    }, 1000);
   }
 
   if (complete) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <CheckCircleIcon className="mb-4 h-12 w-12 text-green-400" />
-        <h2 className="text-lg font-semibold text-text-heading">All matched!</h2>
+        <h2 className="text-lg font-semibold text-text-heading">{t.flashcards.allMatched}</h2>
         <p className="mt-2 text-sm text-text-secondary">
-          Time: {formatTime(elapsed)}
+          {t.flashcards.time(formatTime(elapsed))}
         </p>
         <button
           onClick={playAgain}
           className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
         >
-          Play Again
+          {t.flashcards.playAgain}
         </button>
       </div>
     );

@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useTranslation } from "@/locales";
 
 // Module-level singleton — stable reference
 const supabase = createClient();
@@ -12,12 +13,13 @@ type Mode = "login" | "signup";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslation();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
-    searchParams.get("error") === "auth" ? "Authentication failed. Please try again." : ""
+    searchParams.get("error") === "auth" ? "auth" : ""
   );
 
   async function handleEmailAuth(e: React.FormEvent) {
@@ -57,15 +59,17 @@ function LoginForm() {
     }
   }
 
+  const errorMessage = error === "auth" ? t.login.authFailed : error;
+
   return (
     <div className="w-full max-w-sm">
       <h1 className="mb-1 text-center text-3xl font-bold tracking-tight text-text-heading">
-        {mode === "login" ? "Welcome back" : "Create account"}
+        {mode === "login" ? t.login.welcomeBack : t.login.createAccount}
       </h1>
       <p className="mb-10 text-center text-sm text-text-secondary">
         {mode === "login"
-          ? "Sign in to sync your flashcards"
-          : "Sign up to save your flashcards to the cloud"}
+          ? t.login.signInSubtitle
+          : t.login.signUpSubtitle}
       </p>
 
       {/* Google OAuth */}
@@ -92,12 +96,12 @@ function LoginForm() {
             fill="#EA4335"
           />
         </svg>
-        Continue with Google
+        {t.login.continueGoogle}
       </button>
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-text-muted">or</span>
+        <span className="text-xs text-text-muted">{t.login.or}</span>
         <div className="h-px flex-1 bg-border" />
       </div>
 
@@ -105,7 +109,7 @@ function LoginForm() {
       <form onSubmit={handleEmailAuth} className="space-y-3">
         <input
           type="email"
-          placeholder="Email"
+          placeholder={t.login.email}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -113,7 +117,7 @@ function LoginForm() {
         />
         <input
           type="password"
-          placeholder="Password"
+          placeholder={t.login.password}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -125,18 +129,18 @@ function LoginForm() {
           disabled={loading}
           className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
-          {loading ? "..." : mode === "login" ? "Sign in" : "Sign up"}
+          {loading ? "..." : mode === "login" ? t.login.signIn : t.login.signUp}
         </button>
       </form>
 
-      {error && (
+      {errorMessage && (
         <p className="mt-3 text-center text-sm text-red-500 dark:text-red-400">
-          {error}
+          {errorMessage}
         </p>
       )}
 
       <p className="mt-6 text-center text-sm text-text-secondary">
-        {mode === "login" ? "No account? " : "Already have an account? "}
+        {mode === "login" ? t.login.noAccount : t.login.hasAccount}
         <button
           onClick={() => {
             setMode(mode === "login" ? "signup" : "login");
@@ -144,7 +148,7 @@ function LoginForm() {
           }}
           className="font-medium text-primary-text hover:text-red-700 dark:hover:text-red-300"
         >
-          {mode === "login" ? "Sign up" : "Sign in"}
+          {mode === "login" ? t.login.signUp : t.login.signIn}
         </button>
       </p>
     </div>

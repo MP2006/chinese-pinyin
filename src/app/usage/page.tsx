@@ -3,16 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/locales";
 import { getUsageStats, clearUsageStats, type UsageStats } from "@/lib/apiUsage";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
-const ENDPOINTS = [
-  { key: "/api/translate", label: "Translate", unit: "characters" },
-  { key: "/api/tts", label: "Text-to-Speech", unit: "characters" },
-  { key: "/api/define", label: "Define", unit: "characters" },
-  { key: "/api/speech", label: "Speech", unit: "characters" },
-];
 
 const COST_ESTIMATES: { name: string; rate: number; per: string; endpoint: string; perUnit: number }[] = [
   { name: "Google Cloud Translation", rate: 20, per: "1M chars", endpoint: "/api/translate", perUnit: 1_000_000 },
@@ -46,10 +40,18 @@ function formatDate(iso: string): string {
 export default function UsagePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const t = useTranslation();
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const isAdmin = ADMIN_EMAIL && user?.email === ADMIN_EMAIL;
+
+  const endpoints = [
+    { key: "/api/translate", label: t.usage.translate, unit: t.usage.characters },
+    { key: "/api/tts", label: t.usage.tts, unit: t.usage.characters },
+    { key: "/api/define", label: t.usage.define, unit: t.usage.characters },
+    { key: "/api/speech", label: t.usage.speech, unit: t.usage.characters },
+  ];
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -72,7 +74,6 @@ export default function UsagePage() {
   if (authLoading || !isAdmin || !stats) return null;
 
   const last7 = getLast7Days();
-  const totalChars = Object.values(stats.totals).reduce((s, e) => s + e.chars, 0);
 
   return (
     <main className="min-h-screen bg-surface-page pt-14 transition-colors md:pt-0">
@@ -80,16 +81,16 @@ export default function UsagePage() {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold tracking-tight text-text-heading">
-            API Usage
+            {t.usage.title}
           </h1>
           <p className="mt-2 text-sm text-text-secondary">
-            Track API calls to estimate costs for paid services
+            {t.usage.subtitle}
           </p>
         </div>
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {ENDPOINTS.map((ep) => {
+          {endpoints.map((ep) => {
             const data = stats.totals[ep.key];
             return (
               <div
@@ -103,7 +104,7 @@ export default function UsagePage() {
                   {data ? formatNumber(data.calls) : 0}
                 </div>
                 <div className="text-xs text-text-secondary">
-                  call{(!data || data.calls !== 1) ? "s" : ""}
+                  {t.usage.calls(data?.calls ?? 0)}
                 </div>
                 <div className="mt-1 text-sm text-text-body">
                   {data ? formatNumber(data.chars) : 0} {ep.unit}
@@ -116,16 +117,16 @@ export default function UsagePage() {
         {/* Daily breakdown — last 7 days */}
         <div className="mt-12">
           <h2 className="mb-4 text-lg font-semibold text-text-heading">
-            Last 7 Days
+            {t.usage.last7Days}
           </h2>
           <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-gray-50 dark:bg-gray-800/80">
                   <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-secondary">
-                    Date
+                    {t.usage.date}
                   </th>
-                  {ENDPOINTS.map((ep) => (
+                  {endpoints.map((ep) => (
                     <th
                       key={ep.key}
                       className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-text-secondary"
@@ -146,7 +147,7 @@ export default function UsagePage() {
                       <td className="px-4 py-2.5 text-text-label">
                         {formatDate(date)}
                       </td>
-                      {ENDPOINTS.map((ep) => {
+                      {endpoints.map((ep) => {
                         const epData = dayData?.endpoints[ep.key];
                         return (
                           <td
@@ -155,13 +156,13 @@ export default function UsagePage() {
                           >
                             {epData ? (
                               <span>
-                                {epData.calls} call{epData.calls !== 1 ? "s" : ""}
+                                {epData.calls} {t.usage.calls(epData.calls)}
                                 <span className="ml-1 text-text-muted">
                                   ({formatNumber(epData.chars)})
                                 </span>
                               </span>
                             ) : (
-                              <span className="text-gray-300 dark:text-gray-600">—</span>
+                              <span className="text-gray-300 dark:text-gray-600">&mdash;</span>
                             )}
                           </td>
                         );
@@ -177,10 +178,10 @@ export default function UsagePage() {
         {/* Cost estimator */}
         <div className="mt-12">
           <h2 className="mb-2 text-lg font-semibold text-text-heading">
-            Cost Estimator
+            {t.usage.costEstimator}
           </h2>
           <p className="mb-4 text-sm text-text-secondary">
-            Estimated costs based on your actual usage per endpoint
+            {t.usage.costDesc}
           </p>
           <div className="space-y-3">
             {COST_ESTIMATES.map((est) => {
@@ -213,19 +214,19 @@ export default function UsagePage() {
           {confirmClear ? (
             <>
               <span className="text-sm text-text-secondary">
-                Clear all usage data?
+                {t.usage.clearConfirm}
               </span>
               <button
                 onClick={handleClear}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
               >
-                Confirm
+                {t.usage.confirm}
               </button>
               <button
                 onClick={() => setConfirmClear(false)}
                 className="rounded-lg border border-border-input px-4 py-2 text-sm font-medium text-text-label transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                Cancel
+                {t.common.cancel}
               </button>
             </>
           ) : (
@@ -233,7 +234,7 @@ export default function UsagePage() {
               onClick={() => setConfirmClear(true)}
               className="rounded-lg border border-border-input px-4 py-2 text-sm font-medium text-text-label transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Clear usage data
+              {t.usage.clearData}
             </button>
           )}
         </div>

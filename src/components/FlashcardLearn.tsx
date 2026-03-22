@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { Flashcard } from "@/lib/flashcardStore";
 import { useTTS } from "@/hooks/useTTS";
+import { useTranslation } from "@/locales";
 import { SpeakerIcon, CheckCircleIcon } from "./Icons";
 
 function shuffle<T>(arr: T[]): T[] {
@@ -28,6 +29,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
   const [done, setDone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { speak, speaking } = useTTS();
+  const t = useTranslation();
 
   const card = shuffled[index];
 
@@ -79,16 +81,16 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <CheckCircleIcon className="mb-4 h-12 w-12 text-green-400" />
-        <h2 className="text-lg font-semibold text-text-heading">Session complete!</h2>
+        <h2 className="text-lg font-semibold text-text-heading">{t.flashcards.sessionComplete}</h2>
         <p className="mt-2 text-sm text-text-secondary">
-          {correctCount} of {shuffled.length} correct
+          {t.flashcards.correctOf(correctCount, shuffled.length)}
         </p>
         {missed.length > 0 && (
           <button
             onClick={retryMissed}
             className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
           >
-            Retry missed ({missed.length})
+            {t.flashcards.retryMissed(missed.length)}
           </button>
         )}
       </div>
@@ -104,8 +106,8 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
       {/* Progress */}
       <div className="mb-6">
         <div className="mb-1.5 flex items-center justify-between text-sm text-text-secondary">
-          <span>{index + 1} of {shuffled.length}</span>
-          <span>{correctCount} correct</span>
+          <span>{t.flashcards.xOfY(index + 1, shuffled.length)}</span>
+          <span>{t.flashcards.nCorrect(correctCount)}</span>
         </div>
         <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div
@@ -122,7 +124,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
           {Object.entries(card.definitions).map(([lang, def]) => (
             <div key={lang}>
               <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                {lang === "en" ? "English" : lang === "vi" ? "Tiếng Việt" : lang}
+                {lang === "en" ? t.common.langNameEn : lang === "vi" ? t.common.langNameVi : lang}
               </span>
               <p className="text-sm text-text-label">{def}</p>
             </div>
@@ -143,7 +145,7 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
               else handleSubmit();
             }
           }}
-          placeholder="Type the Chinese word..."
+          placeholder={t.flashcards.typeChinese}
           disabled={result !== null}
           className={`flex-1 rounded-lg border px-4 py-2.5 text-sm outline-none transition-colors ${
             result === "correct"
@@ -159,14 +161,14 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
             disabled={!input.trim()}
             className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
-            Check
+            {t.flashcards.check}
           </button>
         ) : result === "incorrect" ? (
           <button
             onClick={advance}
             className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
           >
-            Continue
+            {t.flashcards.continue_}
           </button>
         ) : null}
       </div>
@@ -175,13 +177,13 @@ export default function FlashcardLearn({ cards }: FlashcardLearnProps) {
       {result === "incorrect" && (
         <div className="mt-3 flex items-center gap-2">
           <p className="text-sm text-text-secondary">
-            Correct answer: <span className="font-medium text-text-heading">{card.word}</span>
+            {t.flashcards.correctAnswer} <span className="font-medium text-text-heading">{card.word}</span>
           </p>
           <button
             onClick={() => speak(card.word)}
             disabled={speaking}
             className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-            aria-label="Speak word"
+            aria-label={t.flashcards.speakWord}
           >
             <SpeakerIcon className={`h-3.5 w-3.5 ${speaking ? "animate-pulse" : ""}`} />
           </button>

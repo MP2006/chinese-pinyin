@@ -3,15 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Flashcard, ReviewRating } from "@/lib/flashcardStore";
 import { useTTS } from "@/hooks/useTTS";
+import { useTranslation } from "@/locales";
 import { SpeakerIcon, SpeakerWaveIcon } from "./Icons";
 
-function SpeakerButton({ speaking, onClick }: { speaking: boolean; onClick: (e: React.MouseEvent) => void }) {
+function SpeakerButton({ speaking, onClick, ariaLabel }: { speaking: boolean; onClick: (e: React.MouseEvent) => void; ariaLabel: string }) {
   return (
     <button
       className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
       onClick={onClick}
       disabled={speaking}
-      aria-label="Speak word"
+      aria-label={ariaLabel}
     >
       {speaking ? (
         <SpeakerWaveIcon className="h-4 w-4 animate-pulse" />
@@ -22,11 +23,11 @@ function SpeakerButton({ speaking, onClick }: { speaking: boolean; onClick: (e: 
   );
 }
 
-const RATINGS: { rating: ReviewRating; label: string; key: string; color: string }[] = [
-  { rating: "again", label: "Again", key: "1", color: "bg-red-500 hover:bg-red-600" },
-  { rating: "hard", label: "Hard", key: "2", color: "bg-orange-500 hover:bg-orange-600" },
-  { rating: "good", label: "Good", key: "3", color: "bg-green-500 hover:bg-green-600" },
-  { rating: "easy", label: "Easy", key: "4", color: "bg-red-500 hover:bg-red-600" },
+const RATINGS: { rating: ReviewRating; labelKey: "again" | "hard" | "good" | "easy"; key: string; color: string }[] = [
+  { rating: "again", labelKey: "again", key: "1", color: "bg-red-500 hover:bg-red-600" },
+  { rating: "hard", labelKey: "hard", key: "2", color: "bg-orange-500 hover:bg-orange-600" },
+  { rating: "good", labelKey: "good", key: "3", color: "bg-green-500 hover:bg-green-600" },
+  { rating: "easy", labelKey: "easy", key: "4", color: "bg-blue-500 hover:bg-blue-600" },
 ];
 
 interface FlashcardViewerProps {
@@ -37,6 +38,7 @@ interface FlashcardViewerProps {
 export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps) {
   const [flipped, setFlipped] = useState(false);
   const { speak, speaking } = useTTS();
+  const t = useTranslation();
 
   // Reset to front when card changes
   useEffect(() => {
@@ -84,12 +86,12 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
             className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-border bg-surface-card p-6"
             style={{ backfaceVisibility: "hidden" }}
           >
-            <SpeakerButton speaking={speaking} onClick={(e) => { e.stopPropagation(); speak(card.word); }} />
+            <SpeakerButton speaking={speaking} onClick={(e) => { e.stopPropagation(); speak(card.word); }} ariaLabel={t.flashcards.speakWord} />
             <span className="text-5xl font-bold text-text-heading">
               {card.word}
             </span>
             <span className="mt-6 text-sm text-text-muted">
-              Click or press Space to reveal
+              {t.flashcards.clickToReveal}
             </span>
           </div>
 
@@ -98,7 +100,7 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
             className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-border bg-surface-card p-6"
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
-            <SpeakerButton speaking={speaking} onClick={(e) => { e.stopPropagation(); speak(card.word); }} />
+            <SpeakerButton speaking={speaking} onClick={(e) => { e.stopPropagation(); speak(card.word); }} ariaLabel={t.flashcards.speakWord} />
             <span className="text-4xl font-bold text-text-heading">
               {card.word}
             </span>
@@ -109,7 +111,7 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
               {Object.entries(card.definitions).map(([lang, def]) => (
                 <div key={lang}>
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                    {lang === "en" ? "English" : lang === "vi" ? "Tiếng Việt" : lang}
+                    {lang === "en" ? t.common.langNameEn : lang === "vi" ? t.common.langNameVi : lang}
                   </span>
                   <p className="text-sm text-text-label">{def}</p>
                 </div>
@@ -128,7 +130,7 @@ export default function FlashcardViewer({ card, onReview }: FlashcardViewerProps
               onClick={() => onReview(card.id, r.rating)}
               className={`rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-colors ${r.color}`}
             >
-              {r.label}
+              {t.flashcards[r.labelKey]}
               <span className="ml-1.5 text-xs opacity-70">({r.key})</span>
             </button>
           ))}

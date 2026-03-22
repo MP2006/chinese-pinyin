@@ -204,7 +204,7 @@ describe("FlashcardMatch", () => {
     vi.useRealTimers();
   });
 
-  it("Play Again calls window.location.reload", () => {
+  it("Play Again resets game state", () => {
     render(<FlashcardMatch cards={cards} />);
 
     // Match all
@@ -217,6 +217,8 @@ describe("FlashcardMatch", () => {
 
     fireEvent.click(screen.getByText("Play Again"));
 
-    expect(mockReload).toHaveBeenCalled();
+    // Should show timer again (game reset, not reload)
+    expect(screen.queryByText("All matched!")).not.toBeInTheDocument();
+    expect(screen.getByText("0:00")).toBeInTheDocument();
   });
 });
