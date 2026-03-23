@@ -1,8 +1,8 @@
 # Hanzi Helper
 
-A Chinese language learning app that combines rich text editing, pinyin annotation, translation, pronunciation practice, and spaced repetition flashcards.
+A Chinese language learning app that combines rich text editing, pinyin annotation, translation, pronunciation practice, AI conversation practice, and spaced repetition flashcards.
 
-Built with Next.js 16, React 19, TailwindCSS 4, and Tiptap.
+Built with Next.js 16, React 19, TailwindCSS 4, Tiptap, and Google Gemini.
 
 ## Features
 
@@ -44,7 +44,9 @@ Built with Next.js 16, React 19, TailwindCSS 4, and Tiptap.
 ### Flashcards
 Sync errors (e.g. network failure while saving to Supabase) are caught and displayed as a dismissible banner — optimistic updates are reverted automatically.
 
-Four Quizlet-style study modes accessible from a mode selection hub:
+Five study modes accessible from an animated mode selection hub (Motion entrance animations, gradient icon boxes):
+
+**Practice** — AI-generated fill-in-the-blank quiz (see AI section above)
 
 **Review** — Spaced repetition with SM-2 style scheduling
 - 3D flip cards (click or Space to reveal)
@@ -67,7 +69,27 @@ Four Quizlet-style study modes accessible from a mode selection hub:
 - Tiles shake on mismatch, fade out on match
 - Timer counts up; shows final time on completion
 
-**Terms in this set** — scrollable word list on the mode selection screen showing all saved words with pinyin and definitions.
+**Terms in this set** — scrollable word list on the mode selection screen showing all saved words with difficulty dots, search, hover actions (TTS, delete), and gradient "Add Card" button.
+
+### AI Conversation Practice
+- Roleplay scenarios: restaurant, train station, making friends, shopping, hotel, directions
+- Adjustable HSK level (1-9) controls vocabulary complexity
+- AI generates unique, scenario-specific objectives each session (e.g. "Order two cups of jasmine tea and ask for the bill")
+- Vocabulary hints with click-to-reveal Chinese/pinyin tooltips
+- Clickable words in AI responses open definition popups (reuses the same `DefinitionPopup` from the editor)
+- AI evaluates objective completion and provides English feedback on grammar/vocabulary
+- Powered by Google Gemini 3.1 Flash Lite via Vercel AI SDK (`generateObject` with Zod schema)
+
+### Flashcard Practice (AI Quiz)
+- AI-generated fill-in-the-blank sentences using saved flashcard words
+- Powered by Gemini — generates contextual sentences at appropriate difficulty
+
+### Grammar Analysis & Correction
+- Select Chinese text and click "Grammar" to see a full grammatical breakdown
+- Powered by Google Gemini 3.1 Flash Lite with Zod schema validation
+- Shows sentence pattern, word-by-word structure with roles (Subject, Verb, Object, etc.), and grammar notes
+- Detects fundamental grammar errors and shows corrections in a muted amber card with corrected pinyin
+- Non-pedantic: does not flag colloquialisms, native slang, or omitted subject pronouns
 
 ### Error Handling
 - Global error boundary catches unhandled errors and offers a "Try again" button
@@ -107,14 +129,14 @@ Open [http://localhost:3000](http://localhost:3000) to use the app.
 
 ## API Security
 
-- **Rate limiting** — Sliding-window limiter per client IP on all API routes (`/api/translate` 30/min, `/api/define` 60/min, `/api/tts` 30/min). Returns `429` with `Retry-After` header when exceeded. Supports **Upstash Redis** for distributed rate limiting across serverless instances; falls back to in-memory when env vars are not set.
-- **Input validation** — `/api/translate` max 10,000 chars / 100 lines, `/api/define` max 50 chars, `/api/tts` max 500 chars. Returns `400` if exceeded.
+- **Rate limiting** — Sliding-window limiter per client IP on all API routes (`/api/translate` 30/min, `/api/define` 60/min, `/api/tts` 30/min, `/api/ocr` 10/min, `/api/analyze-grammar` 20/min, `/api/practice` 30/min). Returns `429` with `Retry-After` header when exceeded. Supports **Upstash Redis** for distributed rate limiting across serverless instances; falls back to in-memory when env vars are not set.
+- **Input validation** — `/api/translate` max 10,000 chars / 100 lines, `/api/define` max 50 chars, `/api/tts` max 500 chars, `/api/analyze-grammar` max 200 chars, `/api/practice` max 50 messages / 500 chars per message. Returns `400` if exceeded.
 - **OAuth redirect protection** — The `next` parameter in `/auth/callback` is validated to prevent open redirects (must be a relative path, no protocol).
 - **Supabase defense-in-depth** — All flashcard mutations filter by `user_id` in addition to Row Level Security.
 
 ## Testing
 
-243 tests across 26 test files using [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/). Overall line coverage: ~97%.
+297 tests across 29 test files using [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/). Overall line coverage: ~97%.
 
 Tests live in `__test__` subdirectories next to the code they test:
 
@@ -125,10 +147,10 @@ Tests live in `__test__` subdirectories next to the code they test:
 | `src/hooks/__test__/` | `useFlashcards` hook (incl. sync error handling), `useTTS` hook, `useWordDefinition` hook |
 | `src/contexts/__test__/` | `AuthContext` (auth provider, sign out, state changes) |
 | `src/app/__test__/` | Global error boundary |
-| `src/app/api/*/__test__/` | API route handlers (`/api/translate`, `/api/define`, `/api/tts`) |
+| `src/app/api/*/__test__/` | API route handlers (`/api/translate`, `/api/define`, `/api/tts`, `/api/analyze-grammar`, `/api/practice`) |
 | `src/app/auth/callback/__test__/` | OAuth callback redirect validation |
 | `src/lib/__test__/rateLimit.test.ts` | Rate limiter (in-memory sliding window + Upstash Redis path) |
-| `src/components/__test__/` | React components (`DefinitionPopup`, `FlashcardViewer`, `FlashcardBrowse`, `FlashcardLearn`, `FlashcardMatch`, `PinyinDisplay`, `Editor`, `Icons`) |
+| `src/components/__test__/` | React components (`DefinitionPopup`, `FlashcardViewer`, `FlashcardBrowse`, `FlashcardLearn`, `FlashcardMatch`, `FlashcardPractice`, `PinyinDisplay`, `Editor`, `Icons`, `GrammarPopover`, `SpeechPractice`) |
 
 ## Tech Stack
 
@@ -139,4 +161,8 @@ Tests live in `__test__` subdirectories next to the code they test:
 - **TTS**: msedge-tts
 - **Dictionary**: CC-CEDICT
 - **Translation**: Lingva API, MyMemory API
+- **AI**: Google Gemini 3.1 Flash Lite (grammar analysis, conversation practice, flashcard practice)
+- **AI SDK**: Vercel AI SDK (`ai` + `@ai-sdk/google`) for structured generation
+- **Animations**: Motion (motion/react) for page transitions and micro-interactions
+- **Icons**: Lucide React for scenario/mode icons
 - **Testing**: Vitest, Testing Library

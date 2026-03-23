@@ -34,6 +34,34 @@ export async function mockDefineAPI(page: Page) {
   });
 }
 
+/** Intercept /cedict.json and return a small test dictionary */
+export async function mockCedictJSON(page: Page) {
+  await page.route("**/cedict.json", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        你好: "hello; hi",
+        你: "you",
+        好: "good; well",
+        世界: "world",
+        谢谢: "thank you; thanks",
+      }),
+    });
+  });
+}
+
+/** Intercept Lingva API and return mock Vietnamese translation */
+export async function mockLingvaAPI(page: Page) {
+  await page.route("**/lingva.ml/api/**", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ translation: "xin chào" }),
+    });
+  });
+}
+
 /** Intercept /api/tts and return a minimal WAV buffer */
 export async function mockTTSAPI(page: Page) {
   await page.route("**/api/tts", (route) => {
@@ -72,5 +100,7 @@ export async function mockAllAPIs(page: Page) {
     mockTranslateAPI(page),
     mockDefineAPI(page),
     mockTTSAPI(page),
+    mockCedictJSON(page),
+    mockLingvaAPI(page),
   ]);
 }

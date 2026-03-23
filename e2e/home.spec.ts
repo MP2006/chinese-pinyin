@@ -78,7 +78,7 @@ test("translation appears after typing", async ({ page }) => {
   await expect(page.getByText(MOCK_TRANSLATION)).toBeVisible({ timeout: 10000 });
 });
 
-test("editor content is saved to sessionStorage", async ({ page }) => {
+test("editor content persists via sessionStorage", async ({ page }) => {
   await page.goto("/");
 
   const editor = page.locator(".tiptap");
@@ -88,23 +88,16 @@ test("editor content is saved to sessionStorage", async ({ page }) => {
   await page.keyboard.insertText(SAMPLE_TEXT);
   await expect(editor).toContainText(SAMPLE_TEXT);
 
-  // Verify sessionStorage was written with editor content
+  // Verify sessionStorage was written
   const stored = await page.evaluate(() =>
     sessionStorage.getItem("editor-content")
   );
   expect(stored).toBeTruthy();
-  const parsed = JSON.parse(stored!);
-  expect(parsed.type).toBe("doc");
-  // The stored content should contain the sample text
-  expect(JSON.stringify(parsed)).toContain(SAMPLE_TEXT);
+  expect(stored).toContain(SAMPLE_TEXT);
 
-  // sessionStorage should survive navigation
-  await page.locator('a[href="/flashcards"]').first().click();
-  await expect(page).toHaveURL(/\/flashcards/);
+  // Reload — sessionStorage survives, editor should restore content
+  await page.reload();
 
-  const storedAfterNav = await page.evaluate(() =>
-    sessionStorage.getItem("editor-content")
-  );
-  expect(storedAfterNav).toBeTruthy();
-  expect(storedAfterNav).toContain(SAMPLE_TEXT);
+  const editorAfter = page.locator(".tiptap");
+  await expect(editorAfter).toContainText(SAMPLE_TEXT, { timeout: 10000 });
 });

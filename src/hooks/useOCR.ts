@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 
-export type OCRStatus = "idle" | "loading-engine" | "recognizing" | "error";
+export type OCRStatus = "idle" | "recognizing" | "error";
 
 export interface OCRBBox {
   x0: number;
@@ -14,23 +14,6 @@ export interface OCRBBox {
 export interface OCRLine {
   text: string;
   bbox: OCRBBox;
-}
-
-let workerInstance: import("tesseract.js").Worker | null = null;
-let workerPromise: Promise<import("tesseract.js").Worker> | null = null;
-
-async function getWorker(): Promise<import("tesseract.js").Worker> {
-  if (workerInstance) return workerInstance;
-  if (workerPromise) return workerPromise;
-
-  workerPromise = (async () => {
-    const { createWorker } = await import("tesseract.js");
-    const worker = await createWorker("chi_sim");
-    workerInstance = worker;
-    return worker;
-  })();
-
-  return workerPromise;
 }
 
 const CJK_RUN =
@@ -49,9 +32,9 @@ export function extractChineseLines(
     if (!matches) continue;
     const chinese = matches.join("");
 
-    // Require at least 2 actual ideographs (not just punctuation)
+    // Require at least 1 actual ideograph (not just punctuation)
     const ideographs = chinese.match(CJK_IDEOGRAPH);
-    if (!ideographs || ideographs.length < 2) continue;
+    if (!ideographs || ideographs.length < 1) continue;
 
     if (seen.has(chinese)) continue;
     seen.add(chinese);
@@ -78,30 +61,25 @@ export function useOCR() {
       imageSource: Blob
     ): Promise<Array<{ text: string; bbox: OCRBBox }>> => {
       setError(null);
+      if (mountedRef.current) setStatus("recognizing");
 
       try {
-        const needsInit = !workerInstance;
-        if (needsInit && mountedRef.current) setStatus("loading-engine");
+        const formData = new FormData();
+        formData.append("image", imageSource);
 
-        const worker = await getWorker();
-        if (mountedRef.current) setStatus("recognizing");
+        const res = await fetch("/api/ocr", {
+          method: "POST",
+          body: formData,
+        });
 
-        const { data } = await worker.recognize(imageSource, {}, { blocks: true });
-
-        if (mountedRef.current) setStatus("idle");
-
-        // Flatten blocks → paragraphs → lines
-        const lines: Array<{ text: string; bbox: OCRBBox }> = [];
-        if (data.blocks) {
-          for (const block of data.blocks) {
-            for (const para of block.paragraphs) {
-              for (const line of para.lines) {
-                lines.push({ text: line.text, bbox: line.bbox });
-              }
-            }
-          }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `OCR failed: ${res.status}`);
         }
-        return lines;
+
+        const data = await res.json();
+        if (mountedRef.current) setStatus("idle");
+        return data.lines || [];
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "OCR recognition failed";

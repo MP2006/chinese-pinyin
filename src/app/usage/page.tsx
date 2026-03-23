@@ -14,6 +14,7 @@ const COST_ESTIMATES: { name: string; rate: number; per: string; endpoint: strin
   { name: "Google Cloud TTS", rate: 16, per: "1M chars", endpoint: "/api/tts", perUnit: 1_000_000 },
   { name: "OpenAI TTS", rate: 15, per: "1M chars", endpoint: "/api/tts", perUnit: 1_000_000 },
   { name: "Google Cloud STT", rate: 1.44, per: "1hr", endpoint: "/api/speech", perUnit: 1_000_000 },
+  { name: "Gemini 2.5 Flash", rate: 0.15, per: "1M chars", endpoint: "/api/analyze-grammar", perUnit: 1_000_000 },
 ];
 
 function formatNumber(n: number): string {
@@ -51,6 +52,7 @@ export default function UsagePage() {
     { key: "/api/tts", label: t.usage.tts, unit: t.usage.characters },
     { key: "/api/define", label: t.usage.define, unit: t.usage.characters },
     { key: "/api/speech", label: t.usage.speech, unit: t.usage.characters },
+    { key: "/api/analyze-grammar", label: t.usage.grammar, unit: t.usage.characters },
   ];
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export default function UsagePage() {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
           {endpoints.map((ep) => {
             const data = stats.totals[ep.key];
             return (

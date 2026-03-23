@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import PinyinDisplay from "@/components/PinyinDisplay";
 import SelectionToolbar from "@/components/SelectionToolbar";
 import DefinitionPopup from "@/components/DefinitionPopup";
+import GrammarPopover from "@/components/GrammarPopover";
 import { useFlashcards } from "@/hooks/useFlashcards";
 import { CloseIcon } from "@/components/Icons";
 import { useWordDefinition } from "@/hooks/useWordDefinition";
@@ -13,6 +14,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useTranslation } from "@/locales";
 import { JSONContent } from "@tiptap/react";
 import { logApiCall } from "@/lib/apiUsage";
+import type { GrammarAnalysis } from "@/types/grammar";
 
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 
@@ -35,7 +37,7 @@ export default function Home() {
   const { addCard, hasCard, syncError, clearSyncError } = useFlashcards();
   const [plainText, setPlainText] = useState("");
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
-  const initialContentRef = useRef<JSONContent | null>(readSavedContent);
+  const initialContentRef = useRef<JSONContent | null>(readSavedContent());
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingLangs, setTranslatingLangs] = useState<Set<string>>(
     new Set()
@@ -54,9 +56,81 @@ export default function Home() {
     clearSelection,
   } = useWordDefinition(pinyinContainerRef);
 
+  // Grammar analysis state
+  const [grammarAnalysis, setGrammarAnalysis] = useState<GrammarAnalysis | null>(null);
+  const [grammarLoading, setGrammarLoading] = useState(false);
+  const [grammarError, setGrammarError] = useState<string | null>(null);
+  const [grammarPosition, setGrammarPosition] = useState({ top: 0, left: 0 });
+  const [grammarVisible, setGrammarVisible] = useState(false);
+  const grammarAbortRef = useRef<AbortController | null>(null);
+
+  const handleGrammar = useCallback(
+    async (text: string, position: { top: number; left: number }) => {
+      // Abort previous request
+      if (grammarAbortRef.current) {
+        grammarAbortRef.current.abort();
+      }
+
+      setGrammarPosition(position);
+      setGrammarVisible(true);
+      setGrammarLoading(true);
+      setGrammarError(null);
+      setGrammarAnalysis(null);
+
+      const controller = new AbortController();
+      grammarAbortRef.current = controller;
+
+      try {
+        const res = await fetch("/api/analyze-grammar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, lang }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 429) {
+            setGrammarError(t.grammar.rateLimit);
+          } else if (res.status === 503) {
+            setGrammarError(t.grammar.notConfigured);
+          } else {
+            setGrammarError(data.error || t.grammar.error);
+          }
+          setGrammarLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (!controller.signal.aborted) {
+          logApiCall("/api/analyze-grammar", text.length);
+          setGrammarAnalysis(data);
+          setGrammarLoading(false);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== "AbortError") {
+          setGrammarError(t.grammar.error);
+          setGrammarLoading(false);
+        }
+      }
+    },
+    [lang, t.grammar]
+  );
+
+  const closeGrammar = useCallback(() => {
+    setGrammarVisible(false);
+    setGrammarAnalysis(null);
+    setGrammarError(null);
+    if (grammarAbortRef.current) {
+      grammarAbortRef.current.abort();
+    }
+  }, []);
+
   const fetchTranslation = useCallback(
-    async (text: string, lang: string) => {
-      if (!text.trim()) {
+    async (rawText: string, lang: string) => {
+      // Collapse multiple newlines into single newline (Tiptap outputs \n\n between blocks)
+      const text = rawText.replace(/\n{2,}/g, "\n").trim();
+      if (!text) {
         setTranslations((prev) => {
           const next = { ...prev };
           delete next[lang];
@@ -191,7 +265,16 @@ export default function Home() {
                 doc={editorJson}
                 onWordClick={handleWordClick}
               />
-              <SelectionToolbar containerRef={pinyinContainerRef} />
+              <SelectionToolbar containerRef={pinyinContainerRef} onGrammar={handleGrammar} />
+              {grammarVisible && (
+                <GrammarPopover
+                  analysis={grammarAnalysis}
+                  loading={grammarLoading}
+                  error={grammarError}
+                  position={grammarPosition}
+                  onClose={closeGrammar}
+                />
+              )}
               {selectedWord && (
                 <DefinitionPopup
                   word={selectedWord}

@@ -483,11 +483,11 @@ describe("Editor", () => {
     ).toBeInTheDocument();
   });
 
-  it("OCR loading state shows engine download text", () => {
-    mockOcrStatus.value = "loading-engine";
+  it("OCR loading state shows recognizing text for any busy status", () => {
+    mockOcrStatus.value = "recognizing";
     render(<Editor onUpdate={onUpdate} />);
     expect(
-      screen.getByText("Downloading Chinese OCR data...")
+      screen.getByText("Reading text from image...")
     ).toBeInTheDocument();
   });
 

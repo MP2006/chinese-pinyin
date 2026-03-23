@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, type RefObject } from "react";
-import { logApiCall } from "@/lib/apiUsage";
+import { defineWord } from "@/lib/cedict";
 import { useSettings } from "@/contexts/SettingsContext";
 
 interface WordDefinition {
@@ -63,13 +63,7 @@ export function useWordDefinition(
       setDefinitionLoading(true);
 
       try {
-        const res = await fetch("/api/define", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ word, langs: missingLangs }),
-        });
-        const data = await res.json();
-        logApiCall("/api/define", word.length);
+        const data = await defineWord(word, lang);
 
         // Merge into cache
         const existing = wordCacheRef.current[word] || {

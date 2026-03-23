@@ -16,15 +16,19 @@ function getDict(): Record<string, string> {
 }
 
 // Clean raw CC-CEDICT formatting:
+// - Remove parenthetical annotations like (third-person singular), (bound form)
 // - Remove pinyin brackets like [nin2], [pi2 ge2 de5]
 // - Remove traditional|simplified pairs like 跑堂兒的|跑堂儿的[...]
-// - Clean up double spaces left behind
+// - Clean up double spaces and trailing punctuation left behind
 function cleanDef(raw: string): string {
   return raw
+    .replace(/\s*\([^)]*\)/g, "")                                         // (annotations)
     .replace(/\s*\w+\|[\u4e00-\u9fff\u3400-\u4dbf]+\[[^\]]*\]/g, "")   // trad|simp[pinyin]
     .replace(/\s*[\u4e00-\u9fff\u3400-\u4dbf]+\[[^\]]*\]/g, "")          // 字[pinyin]
     .replace(/\[[^\]]*\]/g, "")                                            // remaining [pinyin]
     .replace(/\s{2,}/g, " ")
+    .replace(/^[;,\s]+/, "")                                              // leading punctuation
+    .replace(/[;,\s]+$/, "")                                              // trailing punctuation
     .trim();
 }
 
@@ -38,8 +42,8 @@ function shortDef(raw: string, max: number): string {
 function lookupEnglish(word: string): string {
   const d = getDict();
 
-  // Direct match — return cleaned full definition
-  if (d[word]) return cleanDef(d[word]);
+  // Direct match — return first 4 meanings
+  if (d[word]) return shortDef(d[word], 4);
 
   // Try segmenting into sub-words via pinyin-pro
   const segments = segment(word) as { origin: string; result: string }[];

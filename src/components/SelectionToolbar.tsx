@@ -8,6 +8,7 @@ import { SpeakerIcon, SpeakerWaveIcon } from "./Icons";
 
 interface SelectionToolbarProps {
   containerRef: RefObject<HTMLDivElement | null>;
+  onGrammar?: (text: string, position: { top: number; left: number }) => void;
 }
 
 function extractChineseText(selection: Selection): string {
@@ -18,7 +19,7 @@ function extractChineseText(selection: Selection): string {
   return fragment.textContent?.trim() || "";
 }
 
-export default function SelectionToolbar({ containerRef }: SelectionToolbarProps) {
+export default function SelectionToolbar({ containerRef, onGrammar }: SelectionToolbarProps) {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [selectedText, setSelectedText] = useState("");
@@ -51,7 +52,9 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
       const containerRect = containerRef.current.getBoundingClientRect();
       const rangeRect = range.getBoundingClientRect();
 
-      const toolbarWidth = supportsSpeechRecognition ? 200 : 100;
+      const hasGrammar = text.length > 1 && !!onGrammar;
+      const buttonCount = 1 + (supportsSpeechRecognition ? 1 : 0) + (hasGrammar ? 1 : 0);
+      const toolbarWidth = buttonCount * 100;
 
       setSelectedText(text);
       setPosition({
@@ -117,6 +120,29 @@ export default function SelectionToolbar({ containerRef }: SelectionToolbarProps
           containerRef={containerRef}
           onPlayReference={() => speak(selectedText)}
         />
+      )}
+
+      {/* Grammar button (only for multi-character selections) */}
+      {selectedText.length > 1 && onGrammar && (
+        <button
+          data-selection-toolbar
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-700 active:bg-gray-600 dark:text-gray-900 dark:hover:bg-gray-300 dark:active:bg-gray-400"
+          onClick={() => {
+            const containerRect = containerRef.current?.getBoundingClientRect();
+            if (!containerRect) return;
+            onGrammar(selectedText, {
+              top: position.top + 44,
+              left: Math.max(0, position.left),
+            });
+            setVisible(false);
+          }}
+          aria-label={t.selection.analyzeGrammar}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+          {t.selection.grammar}
+        </button>
       )}
     </div>
   );

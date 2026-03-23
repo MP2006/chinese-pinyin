@@ -66,7 +66,7 @@ export default function Editor({ initialContent, onUpdate }: EditorProps) {
   const dragCounterRef = useRef(0);
   const { recognize, status: ocrStatus } = useOCR();
 
-  const ocrBusy = ocrStatus === "loading-engine" || ocrStatus === "recognizing";
+  const ocrBusy = ocrStatus === "recognizing";
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
@@ -477,9 +477,7 @@ export default function Editor({ initialContent, onUpdate }: EditorProps) {
                 )}
                 <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
                   <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-red-600 dark:border-gray-600 dark:border-t-red-400" />
-                  {ocrStatus === "loading-engine"
-                    ? t.editor.ocrDownloading
-                    : t.editor.ocrReading}
+                  {t.editor.ocrReading}
                 </div>
               </div>
             )}

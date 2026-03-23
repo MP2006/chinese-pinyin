@@ -1,0 +1,6 @@
+services:
+  ocr:
+    build: ./ocr-service
+    ports:
+      - "8100:8100"
+    restart: unless-stopped

@@ -1,5 +1,5 @@
 import { createWriteStream } from "fs";
-import { writeFile } from "fs/promises";
+import { copyFile, writeFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createGunzip } from "zlib";
@@ -10,6 +10,7 @@ import { tmpdir } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = join(__dirname, "..", "src", "data", "cedict.json");
+const PUBLIC_PATH = join(__dirname, "..", "public", "cedict.json");
 const CEDICT_URL =
   "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz";
 
@@ -60,8 +61,12 @@ async function build() {
   const count = Object.keys(dict).length;
   console.log(`Parsed ${count} entries.`);
 
-  await writeFile(OUT_PATH, JSON.stringify(dict), "utf-8");
+  const json = JSON.stringify(dict);
+  await writeFile(OUT_PATH, json, "utf-8");
   console.log(`Written to ${OUT_PATH}`);
+
+  await copyFile(OUT_PATH, PUBLIC_PATH);
+  console.log(`Copied to ${PUBLIC_PATH}`);
 }
 
 build().catch((err) => {

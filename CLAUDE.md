@@ -11,6 +11,7 @@ npm run lint         # ESLint
 npm test             # Run all tests (vitest run)
 npm run test:watch   # Run tests in watch mode
 npm run build:dict   # Regenerate CC-CEDICT dictionary (src/data/cedict.json)
+docker compose up -d # Start PaddleOCR service (required for OCR)
 ```
 
 ## Stack
@@ -20,8 +21,13 @@ npm run build:dict   # Regenerate CC-CEDICT dictionary (src/data/cedict.json)
 - **Tiptap** rich text editor (dynamic import, no SSR)
 - **Supabase** — auth (Google + Email/Password) and PostgreSQL flashcard storage
 - **pinyin-pro** — pinyin conversion and word segmentation
-- **tesseract.js** — OCR for Chinese characters
+- **PaddleOCR** — OCR for Chinese characters (Python microservice via Docker)
 - **msedge-tts** — text-to-speech API route
+- **Google Gemini 3.1 Flash Lite** — AI-powered grammar analysis, conversation practice, flashcard practice (`@google/generative-ai`)
+- **Vercel AI SDK** (`ai` + `@ai-sdk/google`) — structured generation for practice chat
+- **Zod** — runtime schema validation for Gemini API responses
+- **Motion** (`motion/react`) — page animations and micro-interactions
+- **Lucide React** — icon library for scenario/mode cards
 
 ## Project Structure
 
@@ -31,26 +37,33 @@ src/
 │   ├── layout.tsx            # Root layout (AuthProvider wraps everything)
 │   ├── page.tsx              # Home — editor + pinyin display + definitions
 │   ├── error.tsx             # Global error boundary (Next.js convention)
-│   ├── flashcards/page.tsx   # Flashcard modes (review, browse, learn, match)
+│   ├── flashcards/page.tsx   # Flashcard modes (review, practice, browse, learn, match)
+│   ├── practice/page.tsx     # AI conversation practice setup (scenario + HSK selection)
 │   ├── login/page.tsx        # Login/signup (Google OAuth + email/password)
 │   ├── usage/page.tsx        # API usage tracker
 │   ├── auth/callback/route.ts # OAuth code exchange
 │   └── api/
 │       ├── translate/route.ts # Full text translation (Lingva primary, MyMemory fallback)
 │       ├── define/route.ts    # Word definitions (CC-CEDICT + Vietnamese translation)
-│       └── tts/route.ts       # Text-to-speech via msedge-tts
+│       ├── tts/route.ts       # Text-to-speech via msedge-tts
+│       ├── ocr/route.ts       # OCR proxy to PaddleOCR microservice
+│       ├── analyze-grammar/route.ts # Grammar analysis + correction via Google Gemini (Zod-validated)
+│       └── practice/route.ts  # AI conversation practice via Gemini + Vercel AI SDK
 ├── components/
 │   ├── Icons.tsx             # Shared SVG icons (SpeakerIcon, CloseIcon, CheckIcon, etc.)
 │   ├── Sidebar.tsx           # Navigation + dark mode + auth UI
 │   ├── Editor.tsx            # Tiptap editor (dynamic import)
 │   ├── PinyinDisplay.tsx     # Word-level pinyin rendering, clickable words
 │   ├── DefinitionPopup.tsx   # Popup for word definitions, save to flashcards
-│   ├── SelectionToolbar.tsx  # Text selection actions (TTS, copy)
+│   ├── SelectionToolbar.tsx  # Text selection actions (TTS, copy, grammar)
+│   ├── GrammarPopover.tsx    # Grammar analysis + correction popover (Gemini-powered)
 │   ├── SpeechPractice.tsx    # Pronunciation practice
+│   ├── PracticeChat.tsx      # AI conversation chat UI (clickable words, vocab hints, definitions)
 │   ├── FlashcardViewer.tsx   # Single card review (flip + rate)
 │   ├── FlashcardBrowse.tsx   # Browse all cards
 │   ├── FlashcardLearn.tsx    # Type-the-answer quiz
-│   └── FlashcardMatch.tsx    # Timed matching game
+│   ├── FlashcardMatch.tsx    # Timed matching game
+│   └── FlashcardPractice.tsx # AI fill-in-the-blank quiz
 ├── contexts/
 │   └── AuthContext.tsx       # AuthProvider + useAuth() hook
 ├── hooks/
@@ -60,6 +73,7 @@ src/
 │   └── useOCR.ts             # OCR hook
 ├── lib/
 │   ├── flashcardStore.ts     # localStorage flashcard CRUD + SM-2 algorithm
+│   ├── gemini.ts             # Shared Gemini model constant (GEMINI_MODEL)
 │   ├── dateUtils.ts          # Shared date utilities (todayStr)
 │   ├── concurrency.ts        # pMap — Promise.all with concurrency limit
 │   ├── translate.ts          # Shared translation functions (Lingva + MyMemory)
@@ -77,6 +91,8 @@ src/
 ├── data/
 │   └── cedict.json           # CC-CEDICT dictionary (~120K entries, GENERATED — do not edit)
 └── types/
+    ├── grammar.ts          # GrammarAnalysis (incl. isCorrect, correction, correctionPinyin, feedback) + GrammarChunk
+    ├── practice.ts         # Practice types (HSKLevel, ScenarioId, PracticeSession, practiceResponseSchema)
     └── speech.d.ts
 ```
 
@@ -91,7 +107,7 @@ Test files live in `__test__/` subdirectories alongside the code they test (e.g.
 - **First login** → auto-migrates localStorage cards to Supabase via batch upsert
 - **Sync errors** → on Supabase write failure, exposes `syncError` string and reverts optimistic update via `refresh()`. Consumers display a dismissible banner and call `clearSyncError()`.
 
-All flashcard sub-components (Viewer, Browse, Learn, Match) receive data as **props** — they don't touch storage directly. Only `flashcards/page.tsx` and `DefinitionPopup.tsx` use the hook.
+All flashcard sub-components (Viewer, Practice, Browse, Learn, Match) receive data as **props** — they don't touch storage directly. Only `flashcards/page.tsx` and `DefinitionPopup.tsx` use the hook.
 
 ### SM-2 Spaced Repetition
 `computeSM2()` is a pure function in `flashcardStore.ts`. It takes a card's current state + rating and returns new `{ interval, easeFactor, reviewCount, nextReview }`. Used by both the localStorage path and the Supabase path.
@@ -106,13 +122,13 @@ Editor content is saved to `sessionStorage` on every keystroke and restored on p
 `src/data/cedict.json` is **generated** (in `.gitignore`). Regenerate with `npm run build:dict`. In API routes, load it with `fs.readFileSync` + lazy init — do NOT use `import` for large JSON to avoid webpack bundling issues.
 
 ### API Security
-- **Rate limiting**: Sliding-window rate limiter (`src/lib/rateLimit.ts`) keyed by client IP. Limits: `/api/translate` 30 req/min, `/api/define` 60 req/min, `/api/tts` 30 req/min. Supports **Upstash Redis** when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` env vars are set; otherwise falls back to an in-memory `Map` (resets on serverless cold starts).
-- **Input length limits**: `/api/translate` max 10K chars / 100 lines, `/api/define` max 50 char word, `/api/tts` max 500 chars.
+- **Rate limiting**: Sliding-window rate limiter (`src/lib/rateLimit.ts`) keyed by client IP. Limits: `/api/translate` 30 req/min, `/api/define` 60 req/min, `/api/tts` 30 req/min, `/api/ocr` 10 req/min, `/api/analyze-grammar` 20 req/min, `/api/practice` 30 req/min. Supports **Upstash Redis** when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` env vars are set; otherwise falls back to an in-memory `Map` (resets on serverless cold starts).
+- **Input length limits**: `/api/translate` max 10K chars / 100 lines, `/api/define` max 50 char word, `/api/tts` max 500 chars, `/api/analyze-grammar` max 200 chars, `/api/practice` max 50 messages / 500 chars per message.
 - **OAuth redirect validation**: `auth/callback` validates the `next` param (must start with `/`, no `//` or `://`) to prevent open redirects.
 - **Defense-in-depth**: All Supabase mutation queries in `useFlashcards` include `.eq("user_id", user.id)` alongside RLS.
 
 ### Testing
-**Vitest** with `@testing-library/react` and `@testing-library/user-event`. Config in `vitest.config.ts`. **243 tests across 26 files. Overall line coverage: ~97%.**
+**Vitest** with `@testing-library/react` and `@testing-library/user-event`. Config in `vitest.config.ts`. **297 tests across 29 files. Overall line coverage: ~97%.**
 
 - **Default environment**: `node` (fast for pure function tests). Tests needing DOM/localStorage opt in with `// @vitest-environment jsdom` at the top of the file.
 - **Setup file**: `src/__test__/setup.ts` — imports jest-dom matchers, runs `cleanup()` after each test, polyfills `crypto.randomUUID`.
@@ -133,7 +149,8 @@ Editor content is saved to `sessionStorage` on every keystroke and restored on p
 - **Testing**: Vitest + Testing Library. Tests in `__test__/` subdirectories. Use `// @vitest-environment jsdom` comment for tests needing DOM/localStorage (default is `node`).
 - **Shared Icons**: Reusable SVG icons live in `src/components/Icons.tsx` (SpeakerIcon, SpeakerWaveIcon, CloseIcon, CheckIcon, CheckCircleIcon, TrashIcon, PlusIcon). Each takes an optional `className` prop. Use these instead of inline SVGs for commonly-used icons.
 - **Shared utilities**: `todayStr()` in `src/lib/dateUtils.ts`, `pMap()` in `src/lib/concurrency.ts`. Import from these rather than defining locally.
-- **`useWordDefinition` hook**: Extracted from `page.tsx` — encapsulates word click handling, definition fetching, and client-side cache. Used by the home page.
+- **`useWordDefinition` hook**: Extracted from `page.tsx` — encapsulates word click handling, definition fetching, and client-side cache. Used by the home page and `PracticeChat`.
+- **Shared Gemini model**: `src/lib/gemini.ts` exports `GEMINI_MODEL` constant used by all AI API routes. Change the model in one place.
 - **Error boundary**: `src/app/error.tsx` catches unhandled errors in all pages (Next.js App Router convention).
 - **`useSearchParams()`** must be wrapped in a `<Suspense>` boundary (Next.js 16 requirement).
 - Next.js 16 shows a deprecation warning for `middleware` (recommends `proxy`) — this is non-blocking.
@@ -150,4 +167,14 @@ Optional (enables distributed rate limiting):
 ```
 UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
 UPSTASH_REDIS_REST_TOKEN=AXxx...
+```
+
+Optional (PaddleOCR service URL, defaults to `http://localhost:8100`):
+```
+OCR_SERVICE_URL=http://localhost:8100
+```
+
+Optional (enables grammar analysis + AI conversation practice via Google Gemini):
+```
+GEMINI_API_KEY=your-gemini-api-key
 ```
